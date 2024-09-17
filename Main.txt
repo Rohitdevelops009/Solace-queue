@@ -1,0 +1,42 @@
+import com.solacesystems.jcsmp.*;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.micrometer.prometheus.PrometheusMeterRegistry;
+
+public class Main {
+    private static final String SOLACE_HOST = "tcp://localhost:55555";
+    private static final String QUEUE_NAME = "sampleQueue";
+
+    public static void main(String[] args) {
+        try {
+            // Micrometer setup
+            PrometheusMeterRegistry prometheusRegistry = new PrometheusMeterRegistry(io.micrometer.prometheus.PrometheusConfig.DEFAULT);
+            MeterRegistry meterRegistry = new SimpleMeterRegistry();
+
+            // Solace setup
+            JCSMPProperties properties = new JCSMPProperties();
+            properties.setProperty(JCSMPProperties.HOST, SOLACE_HOST);
+            properties.setProperty(JCSMPProperties.USERNAME, "username");
+            properties.setProperty(JCSMPProperties.PASSWORD, "password");
+            properties.setProperty(JCSMPProperties.VPN_NAME, "vpn");
+            JCSMPSession session = JCSMPFactory.onlyInstance().createSession(properties);
+            session.connect();
+
+            // Create producer and consumer threads
+            Thread producerThread = new Thread(new Producer(session, QUEUE_NAME, meterRegistry));
+            Thread consumerThread = new Thread(new Consumer(session, QUEUE_NAME, meterRegistry));
+
+            producerThread.start();
+            consumerThread.start();
+
+            producerThread.join();
+            consumerThread.join();
+            
+            // Export metrics
+            System.out.println(prometheusRegistry.scrape());
+
+        } catch (JCSMPException | InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+}

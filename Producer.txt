@@ -1,0 +1,37 @@
+import com.solacesystems.jcsmp.*;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+
+public class Producer implements Runnable {
+    private final JCSMPSession session;
+    private final String queueName;
+    private final MeterRegistry meterRegistry;
+    private static final int MESSAGE_COUNT = 100000;
+
+    public Producer(JCSMPSession session, String queueName, MeterRegistry meterRegistry) {
+        this.session = session;
+        this.queueName = queueName;
+        this.meterRegistry = meterRegistry;
+    }
+
+    @Override
+    public void run() {
+        try {
+            final Queue queue = JCSMPFactory.onlyInstance().createQueue(queueName);
+            final XMLMessageProducer producer = session.getMessageProducer(null);
+
+            Timer timer = meterRegistry.timer("message_production");
+
+            for (int i = 0; i < MESSAGE_COUNT; i++) {
+                TextMessage message = JCSMPFactory.onlyInstance().createMessage(TextMessage.class);
+                message.setText("Message " + i);
+
+                Timer.Sample sample = Timer.start(meterRegistry);
+                producer.send(message, queue);
+                sample.stop(timer);
+            }
+        } catch (JCSMPException e) {
+            e.printStackTrace();
+        }
+    }
+}

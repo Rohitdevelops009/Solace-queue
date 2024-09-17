@@ -1,0 +1,41 @@
+import com.solacesystems.jcsmp.*;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+
+public class Consumer implements Runnable {
+    private final JCSMPSession session;
+    private final String queueName;
+    private final MeterRegistry meterRegistry;
+
+    public Consumer(JCSMPSession session, String queueName, MeterRegistry meterRegistry) {
+        this.session = session;
+        this.queueName = queueName;
+        this.meterRegistry = meterRegistry;
+    }
+
+    @Override
+    public void run() {
+        try {
+            final Queue queue = JCSMPFactory.onlyInstance().createQueue(queueName);
+            final XMLMessageConsumer consumer = session.getMessageConsumer(new XMLMessageListener() {
+                @Override
+                public void onReceive(Message message) {
+                    Timer timer = meterRegistry.timer("message_consumption");
+                    Timer.Sample sample = Timer.start(meterRegistry);
+                    // Process message here
+                    sample.stop(timer);
+                }
+
+                @Override
+                public void onException(JCSMPException e) {
+                    e.printStackTrace();
+                }
+            });
+
+            session.addSubscription(queue);
+            consumer.start();
+        } catch (JCSMPException e) {
+            e.printStackTrace();
+        }
+    }
+}
