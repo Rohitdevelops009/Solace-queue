@@ -1,0 +1,76 @@
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
+
+import java.util.concurrent.atomic.AtomicLong;
+
+public class Producer {
+    private final MeterRegistry meterRegistry;
+    private final Counter messagesProduced;
+    private final Counter produceErrors;
+    private final Timer produceTimer;
+    private final AtomicLong messageSizeTotal = new AtomicLong();
+    private final AtomicLong messageCount = new AtomicLong();
+
+    public Producer(MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
+        this.messagesProduced = meterRegistry.counter("messages.produced");
+        this.produceErrors = meterRegistry.counter("produce.errors");
+        this.produceTimer = meterRegistry.timer("produce.time");
+
+        Gauge.builder("message.size.avg", messageSizeTotal, value -> value.get() / Math.max(1, messageCount.get()))
+            .description("Average size of messages produced")
+            .register(meterRegistry);
+    }
+
+    public void produceMessage(String message) {
+        long startTime = System.nanoTime();
+        try {
+            // Send message to queue (simulation)
+            messagesProduced.increment();
+            messageSizeTotal.addAndGet(message.length());
+            messageCount.incrementAndGet();
+        } catch (Exception e) {
+            produceErrors.increment();
+        } finally {
+            produceTimer.record(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
+        }
+    }
+}
+
+public class Consumer {
+    private final MeterRegistry meterRegistry;
+    private final Counter messagesConsumed;
+    private final Counter consumeErrors;
+    private final Timer consumeTimer;
+    private final AtomicLong processingTimeTotal = new AtomicLong();
+    private final AtomicLong messagesProcessed = new AtomicLong();
+
+    public Consumer(MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
+        this.messagesConsumed = meterRegistry.counter("messages.consumed");
+        this.consumeErrors = meterRegistry.counter("consume.errors");
+        this.consumeTimer = meterRegistry.timer("consume.time");
+
+        Gauge.builder("processing.time.avg", processingTimeTotal, value -> value.get() / Math.max(1, messagesProcessed.get()))
+            .description("Average processing time of consumed messages")
+            .register(meterRegistry);
+    }
+
+    public void consumeMessage() {
+        long startTime = System.nanoTime();
+        try {
+            // Retrieve and process message from queue (simulation)
+            messagesConsumed.increment();
+            // Simulate processing time
+            long processingTime = System.nanoTime() - startTime;
+            processingTimeTotal.addAndGet(processingTime);
+            messagesProcessed.incrementAndGet();
+        } catch (Exception e) {
+            consumeErrors.increment();
+        } finally {
+            consumeTimer.record(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
+        }
+    }
+}
