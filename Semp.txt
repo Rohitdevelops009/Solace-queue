@@ -1,0 +1,120 @@
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.Base64;
+
+public class SolaceSEMPClient {
+    
+    private static final String SEMP_BASE_URL = "http://<solace-broker-ip>:8080/SEMP/v2/";
+    private static final String USERNAME = "<admin-username>";
+    private static final String PASSWORD = "<admin-password>";
+
+    // Base method to make a GET request to the SEMP API
+    private static String sendGetRequest(String endpoint) throws Exception {
+        String url = SEMP_BASE_URL + endpoint;
+
+        URL obj = new URL(url);
+        HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+        con.setRequestMethod("GET");
+        String auth = USERNAME + ":" + PASSWORD;
+        String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes("UTF-8"));
+        con.setRequestProperty("Authorization", "Basic " + encodedAuth);
+
+        int responseCode = con.getResponseCode();
+        if (responseCode == 200) {
+            BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+            String inputLine;
+            StringBuilder response = new StringBuilder();
+            while ((inputLine = in.readLine()) != null) {
+                response.append(inputLine);
+            }
+            in.close();
+            return response.toString();
+        } else {
+            throw new RuntimeException("Failed: HTTP error code : " + responseCode);
+        }
+    }
+
+    // Fetch Queue-level statistics
+    public static String getQueueStatistics(String queueName, String vpnName) throws Exception {
+        String endpoint = "monitor/msgVpns/" + vpnName + "/queues/" + queueName + "/stats";
+        return sendGetRequest(endpoint);
+    }
+
+    public static void main(String[] args) {
+        try {
+            String queueName = "<your-queue-name>";
+            String vpnName = "<your-vpn-name>";
+            String response = getQueueStatistics(queueName, vpnName);
+            System.out.println("Queue Statistics: " + response);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+// Fetch System-level statistics
+public static String getSystemStatistics() throws Exception {
+    String endpoint = "monitor/system/stats";
+    return sendGetRequest(endpoint);
+}
+
+public static void main(String[] args) {
+    try {
+        String response = getSystemStatistics();
+        System.out.println("System Statistics: " + response);
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+}
+// Fetch Message-level statistics
+public static String getMessageStatistics(String vpnName) throws Exception {
+    String endpoint = "monitor/msgVpns/" + vpnName + "/stats";
+    return sendGetRequest(endpoint);
+}
+
+public static void main(String[] args) {
+    try {
+        String vpnName = "<your-vpn-name>";
+        String response = getMessageStatistics(vpnName);
+        System.out.println("Message Statistics: " + response);
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+}
+The SEMP (Solace Element Management Protocol) base URL depends on the management interface of your Solace PubSub+ Broker. By default, SEMP requests are handled over HTTP or HTTPS using the management port of the broker.
+
+Here’s how you can construct the SEMP base URL:
+
+### **SEMP Base URL Format:**
+```
+http://<solace-broker-ip>:<management-port>/SEMP/v2/config/
+```
+
+OR, if using HTTPS:
+```
+https://<solace-broker-ip>:<management-port>/SEMP/v2/config/
+```
+
+### **Default Ports:**
+- For **HTTP**: The default port is `8080`.
+- For **HTTPS**: The default port is `9443`.
+
+However, these ports can be customized, so you’ll need to confirm which management ports are configured for SEMP access.
+
+### Example:
+- **HTTP Base URL**: `http://192.168.1.100:8080/SEMP/v2/config/`
+- **HTTPS Base URL**: `https://192.168.1.100:9443/SEMP/v2/config/`
+
+### Gathering Statistics
+For different statistics, you will need to hit different endpoints. Here are some examples:
+
+- **Queue Statistics**: `http://<broker-ip>:<port>/SEMP/v2/monitor/msgVpns/<vpn-name>/queues/<queue-name>`
+- **System Statistics**: `http://<broker-ip>:<port>/SEMP/v2/monitor/systemStats`
+- **Message Statistics**: `http://<broker-ip>:<port>/SEMP/v2/monitor/msgVpns/<vpn-name>/queues/<queue-name>/messages`
+
+Make sure to replace `<solace-broker-ip>`, `<management-port>`, `<vpn-name>`, and `<queue-name>` with appropriate values.
+
+### Authentication:
+SEMP requests require HTTP Basic Authentication (admin username and password), which should be included in the headers of your request.
