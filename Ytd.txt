@@ -1,0 +1,20 @@
+Success and Achievements:
+
+Since joining the company, I have been proactive in upskilling myself and delivering on key projects. I successfully completed all mandatory trainings under "Develop You" and enhanced my technical knowledge by engaging with advanced topics through Pluralsight.
+
+One of my key contributions has been the development of a Spring Boot API for the Capestone project, enabling seamless data transactions for sending and receiving information. This API is pivotal in ensuring efficient data flow, aligning with the project’s goals.
+
+Currently, I am working on a Grafana dashboard that visualizes Solace queue statistics using Prometheus services. This will offer real-time insights into queue performance, significantly enhancing monitoring capabilities for the team.
+
+Looking ahead, I plan to leverage caching technology to build scalable, high-performance solutions. My primary focus will be on the Distribution module, where I aim to contribute effectively by optimizing and delivering robust solutions for ongoing projects.
+
+Area of focus:
+In the coming months, my primary area of focus will be on enhancing my technical expertise and contributing effectively to key projects as part of the Sprints . I plan to deepen my understanding of caching technology to build scalable and high-performance solutions, which is crucial for the success of future projects. My main responsibility will be delivering on the allocation module, and I am committed to ensuring timely and high-quality outputs that align with project goals. Additionally, I will continue to engage in continuous learning and development, leveraging new tools and technologies to stay ahead in the rapidly evolving tech landscape. Improving collaboration and communication within cross-functional teams will also be a priority, as I aim to foster smoother workflows and contribute to more successful project outcomes.
+
+Risk Overlay:
+
+During my work on creating the Grafana dashboard using Prometheus to display Solace queue statistics, I encountered a challenge related to compliance. The Prometheus scraping service, which was critical to the project, was not accessible to developers due to compliance restrictions. This posed a significant risk to the project’s progress. However, I proactively reached out to the relevant teams, and they organized meetings and sessions to provide the necessary support. Their guidance allowed me to work through the compliance requirements, ensuring that the project remained on track while adhering to organizational policies.
+
+Overall summary:
+
+Since joining the company, I have successfully completed mandatory and technical trainings while contributing to key projects. I developed a Spring Boot API for the Capestone project and am currently working on a Grafana dashboard using Prometheus to monitor Solace queue statistics. Despite facing compliance challenges with Prometheus access, I collaborated with teams to resolve the issue. Moving forward, my focus will be on optimizing the allocation module, mastering caching technology for scalability, and enhancing cross-functional collaboration.
