@@ -1,0 +1,98 @@
+The `tnsnames.ora` file is used by Oracle clients to define database connection details. Since you're working with an Oracle database that uses SSL/TLS, your `tnsnames.ora` configuration will need to include the `TCPS` protocol and necessary parameters for enabling encryption.
+
+Here’s a sample `tnsnames.ora` entry for an Oracle database connection over SSL/TLS:
+
+### Sample `tnsnames.ora` with SSL/TLS
+
+```ini
+DB_ALIAS =
+  (DESCRIPTION =
+    (ADDRESS_LIST =
+      (ADDRESS = (PROTOCOL = TCPS)(HOST = your_db_host)(PORT = 2484))
+    )
+    (CONNECT_DATA =
+      (SERVICE_NAME = your_service_name)
+    )
+    (SECURITY =
+      (SSL_SERVER_CERT_DN = "CN=your_db_host, OU=Database, O=Your_Organization, L=Your_City, ST=Your_State, C=Your_Country")
+    )
+  )
+```
+
+### Explanation of Each Section:
+
+1. **DB_ALIAS**: 
+   - This is the alias you will use to reference the connection. Replace it with a meaningful name (e.g., `DB_ALIAS` could be `ORCL_SSL`).
+   
+2. **DESCRIPTION**: 
+   - The root container that defines the connection details.
+
+3. **ADDRESS_LIST**: 
+   - Defines the connection protocol and address for the Oracle instance.
+   - **PROTOCOL**: Set to `TCPS` (TCP with SSL/TLS).
+   - **HOST**: Replace with your database's hostname or IP address.
+   - **PORT**: 2484 is the default port for SSL in Oracle, but this should match your database configuration.
+
+4. **CONNECT_DATA**: 
+   - **SERVICE_NAME**: Replace `your_service_name` with the actual Oracle service name of your database instance.
+
+5. **SECURITY**: 
+   - **SSL_SERVER_CERT_DN**: This is the **Distinguished Name (DN)** of the server certificate. It ensures that the client is connecting to the correct server and prevents man-in-the-middle attacks.
+   - Replace `CN`, `OU`, `O`, `L`, `ST`, and `C` with the values from your server's certificate. These fields are case-sensitive and must exactly match the values in the server's certificate.
+
+### Additional Settings for `sqlnet.ora`
+
+For the SSL/TLS connection to work, your `sqlnet.ora` file must also be correctly configured to handle SSL. Here's an example of the SSL/TLS configuration for `sqlnet.ora`:
+
+```ini
+SQLNET.AUTHENTICATION_SERVICES = (BEQ, TCPS)
+SSL_VERSION = 1.2
+WALLET_LOCATION =
+  (SOURCE =
+    (METHOD = FILE)
+    (METHOD_DATA =
+      (DIRECTORY = /path/to/your/wallet)
+    )
+  )
+SSL_CLIENT_AUTHENTICATION = FALSE
+```
+
+### Explanation:
+- **SQLNET.AUTHENTICATION_SERVICES**: Defines the allowed authentication protocols. Ensure `TCPS` is included for SSL connections.
+- **SSL_VERSION**: Specify the TLS/SSL version (usually `1.2`).
+- **WALLET_LOCATION**: If your Oracle DB uses Oracle Wallet for SSL, provide the location of the Oracle Wallet.
+- **SSL_CLIENT_AUTHENTICATION**: Set to `FALSE` if the server does not require client-side authentication via certificates (only for server-side authentication).
+
+### Example
+
+Let's assume:
+- **Host**: `db.example.com`
+- **Port**: `2484`
+- **Service Name**: `ORCLDB`
+- **Distinguished Name (DN)**: `CN=db.example.com, OU=IT, O=Example Corp, L=New York, ST=NY, C=US`
+
+Your `tnsnames.ora` entry would look like this:
+
+```ini
+ORCL_SSL =
+  (DESCRIPTION =
+    (ADDRESS_LIST =
+      (ADDRESS = (PROTOCOL = TCPS)(HOST = db.example.com)(PORT = 2484))
+    )
+    (CONNECT_DATA =
+      (SERVICE_NAME = ORCLDB)
+    )
+    (SECURITY =
+      (SSL_SERVER_CERT_DN = "CN=db.example.com, OU=IT, O=Example Corp, L=New York, ST=NY, C=US")
+    )
+  )
+```
+
+### Important Notes:
+
+- **Server Certificate DN**: Ensure that the `SSL_SERVER_CERT_DN` exactly matches the DN from the server’s SSL certificate.
+- **Wallet Configuration**: If your Oracle environment is using Oracle Wallet for SSL management, configure it in `sqlnet.ora` and make sure the wallet contains the appropriate keys and certificates.
+
+Once the `tnsnames.ora` and `sqlnet.ora` files are properly configured, you should be able to connect to the database securely using TLS/SSL.
+
+Let me know if you need further clarification or assistance!

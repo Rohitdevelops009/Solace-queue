@@ -1,0 +1,95 @@
+To obtain the SSL certificate for an Oracle database, especially when using Oracle SQL Developer, you will need to extract the SSL/TLS certificate used by the Oracle database server. This can be done through a browser or using command-line tools like OpenSSL. Here's a step-by-step guide on how to obtain the certificate:
+
+### Steps to Obtain SSL Certificate:
+
+#### Option 1: Using a Browser
+1. **Find Database Host and Port**
+   - First, confirm the host and port of your Oracle DB's `TCPS` (SSL-enabled) listener.
+   - The default SSL port for Oracle is `2484`. If it is different, adjust accordingly.
+
+2. **Open a Browser (Chrome/Firefox)**
+   - Open Chrome or Firefox and navigate to: `https://<your-database-host>:2484`
+   - If the database is accessible over SSL, the browser will throw a security warning (e.g., the site is not secure).
+   
+3. **View Certificate**
+   - On the security warning page, look for the option to view or proceed to the "Certificate Details."
+   - In Chrome: Click on "Not secure" (next to the URL) -> Click on "Certificate" -> View the details.
+   - In Firefox: Click on the "Advanced" option and view the certificate.
+
+4. **Export the Certificate**
+   - You should see an option to export or save the certificate.
+   - Save it as a `.pem` or `.crt` file, depending on what options the browser gives.
+
+5. **Import to Java TrustStore**
+   - Once you have the certificate, you’ll need to import it into your Java `truststore` for use with your JDBC connection.
+   - Use the following command to import the certificate:
+     ```bash
+     keytool -importcert -file your_certificate.pem -keystore truststore.jks -alias oracleCert
+     ```
+
+#### Option 2: Using OpenSSL
+If the database is not accessible via a browser, you can use `OpenSSL` to retrieve the SSL certificate directly from the database listener.
+
+1. **Install OpenSSL (if not installed)**:
+   - If you're on Linux, macOS, or Windows with WSL, `OpenSSL` is often pre-installed. If not, you can install it via a package manager:
+     - For **Linux**: `sudo apt install openssl`
+     - For **Windows**: Download OpenSSL binaries from [here](https://slproweb.com/products/Win32OpenSSL.html).
+
+2. **Use OpenSSL to Retrieve the Certificate**:
+   - Run the following command to connect to the database over SSL and retrieve the certificate:
+     ```bash
+     openssl s_client -connect <your-database-host>:2484 -showcerts
+     ```
+   - Replace `<your-database-host>` with your actual Oracle database hostname.
+
+3. **Copy the Certificate**
+   - The command will output the SSL certificate in PEM format. The certificate will be enclosed between `-----BEGIN CERTIFICATE-----` and `-----END CERTIFICATE-----`.
+   - Copy everything between (and including) those lines into a new `.pem` file.
+
+4. **Import the Certificate into Java TrustStore**:
+   - After saving the certificate, import it into the Java truststore using the `keytool` command:
+     ```bash
+     keytool -importcert -file your_certificate.pem -keystore truststore.jks -alias oracleCert
+     ```
+   - You will be prompted to create a password for the truststore. After that, the certificate will be added.
+
+#### Option 3: Using Oracle Wallet Manager (if applicable)
+If your Oracle database uses an Oracle Wallet, you can export the wallet's certificate through Oracle Wallet Manager.
+
+1. **Log into Oracle Wallet Manager**:
+   - Launch Oracle Wallet Manager from the Oracle database server or your local machine where you have Oracle Wallet installed.
+
+2. **Export the SSL Certificate**:
+   - Open the Oracle Wallet, locate the certificate, and export it as a `.pem` or `.cer` file.
+
+3. **Add to TrustStore**:
+   - Import the exported certificate into the Java truststore as shown in the previous steps.
+
+### Verify the Certificate
+To verify that the certificate was imported correctly into the Java truststore, use the following command:
+```bash
+keytool -list -keystore truststore.jks
+```
+This will list all certificates in the truststore, including the one you just added.
+
+### Using the SSL Certificate in SQL Developer
+Once you have the SSL certificate, you can configure Oracle SQL Developer to use it when connecting to the database:
+
+1. **Add the Certificate to SQL Developer**:
+   - If SQL Developer uses its own JDK, add the certificate to the `cacerts` file located in the JDK used by SQL Developer.
+     ```bash
+     keytool -import -alias oracleCert -file your_certificate.pem -keystore /path/to/sql_developer/jdk/jre/lib/security/cacerts
+     ```
+   - Default password for `cacerts` is usually `changeit`.
+
+2. **Enable SSL in SQL Developer**:
+   - In SQL Developer, when setting up a new connection:
+     - Go to `Advanced` tab.
+     - Add the SSL-related JDBC parameters (`javax.net.ssl.trustStore`, `javax.net.ssl.trustStorePassword`) under "Custom JDBC Properties."
+
+3. **Test the Connection**:
+   - Test the connection by clicking "Test" to ensure that SQL Developer can successfully connect using SSL.
+
+---
+
+With these steps, you should be able to obtain and configure the SSL certificate for your Oracle database connection. Let me know if you need further clarification!
