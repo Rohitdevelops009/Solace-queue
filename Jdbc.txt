@@ -1,0 +1,101 @@
+To connect to an SQL Developer-compatible database (likely Oracle DB) using TLS, you need to configure your JDBC connection to enforce SSL/TLS encryption.
+
+Here’s a sample Java program using JDBC to connect to an Oracle database with TLS enabled:
+
+### Steps for the program:
+
+1. **JDBC Connection String**: Add the necessary TLS parameters.
+2. **Oracle Wallet or SSL certificates**: If your Oracle DB is configured with a wallet or certificates, include them in the connection properties.
+3. **Java Trust Store**: Ensure that the necessary certificates are available in the Java trust store.
+
+### Sample Program: Connecting to Oracle DB using JDBC with TLS
+
+```java
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.Properties;
+
+public class OracleDBTLSConnection {
+    
+    public static void main(String[] args) {
+        // JDBC URL format with SSL parameters
+        String jdbcUrl = "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=tcps)(HOST=your_db_host)(PORT=2484))(CONNECT_DATA=(SERVICE_NAME=your_service_name)))";
+
+        // JDBC connection properties
+        Properties props = new Properties();
+        props.setProperty("user", "your_db_username");
+        props.setProperty("password", "your_db_password");
+
+        // Enable SSL
+        props.setProperty("oracle.net.ssl_server_dn_match", "true");  // For DN matching
+        props.setProperty("javax.net.ssl.trustStore", "/path/to/your/truststore.jks");  // Path to trust store
+        props.setProperty("javax.net.ssl.trustStorePassword", "yourTrustStorePassword"); // Password of trust store
+
+        try {
+            // Load Oracle JDBC driver
+            Class.forName("oracle.jdbc.OracleDriver");
+            
+            // Establish a connection
+            Connection connection = DriverManager.getConnection(jdbcUrl, props);
+            
+            System.out.println("Connected to the database successfully with TLS!");
+
+            // Close the connection
+            connection.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+### Key Points:
+
+1. **JDBC URL**: 
+   - The JDBC URL uses `tcps` (TCP with SSL) protocol and includes the `HOST`, `PORT` (default for SSL is 2484), and `SERVICE_NAME`.
+   
+   Example URL:
+   ```plaintext
+   jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=tcps)(HOST=your_db_host)(PORT=2484))(CONNECT_DATA=(SERVICE_NAME=your_service_name)))
+   ```
+
+2. **SSL Properties**:
+   - **oracle.net.ssl_server_dn_match**: This ensures the server’s Distinguished Name (DN) matches the certificate.
+   - **javax.net.ssl.trustStore**: Path to the trust store where the database SSL certificate is stored.
+   - **javax.net.ssl.trustStorePassword**: Password for the trust store.
+
+3. **Oracle Wallet**:
+   - If the Oracle DB is configured with an Oracle Wallet, you might need to use Oracle Wallet files (`cwallet.sso` or `ewallet.p12`) for SSL communication. These files should be placed on the client machine and referred to in the connection properties.
+
+### Steps to configure:
+
+1. **Obtain SSL Certificates**: 
+   - Export the SSL certificate from your database server and import it into a Java Keystore (JKS).
+   
+   Example:
+   ```bash
+   keytool -import -alias oracleCert -file server-cert.pem -keystore truststore.jks
+   ```
+
+2. **Configure Oracle DB**: 
+   - Ensure your Oracle DB server is configured to accept SSL/TLS connections. The configuration file `sqlnet.ora` on the server should include the following:
+   ```ini
+   SQLNET.ENCRYPTION_SERVER = REQUIRED
+   SQLNET.ENCRYPTION_TYPES_SERVER = (AES256)
+   SQLNET.CRYPTO_CHECKSUM_SERVER = REQUIRED
+   SQLNET.CRYPTO_CHECKSUM_TYPES_SERVER = (SHA256)
+   ```
+
+3. **Set Up Trust Store in Java**:
+   - Point the trust store location in the program, where it contains the server’s SSL certificate.
+
+4. **Test the Connection**:
+   - Run the program to ensure that the JDBC connection is successful using TLS.
+
+### Dependencies:
+- **Oracle JDBC Driver**: You need to add the Oracle JDBC driver (`ojdbc8.jar` for Java 8 or higher) to your classpath.
+
+Let me know if you need help with any specific configuration or testing the connection further!
