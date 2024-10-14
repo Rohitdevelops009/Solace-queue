@@ -1,0 +1,123 @@
+Since you're using **Oracle SQL Developer** on an **enterprise laptop** and do not have direct access to the `listener.ora`, `sqlnet.ora`, or `tnsnames.ora` files, the typical configuration methods for enabling SSL/TLS are different. SQL Developer uses JDBC for connections and doesn’t require direct access to these configuration files. Instead, SSL/TLS settings can be managed directly within the SQL Developer interface.
+
+Here’s how you can set up **SSL/TLS (TCPS)** for **Oracle SQL Developer**:
+
+---
+
+### **Steps to Configure SSL/TLS in SQL Developer**
+
+#### **1. Obtain Required Certificates**
+
+To connect via SSL/TLS, you need the **CA certificate** (and optionally the client certificate) that the Oracle database server uses to validate the connection. Since you mentioned you have a **`tls-ca-bundle.pem`** file, you can use this certificate in SQL Developer.
+
+- Ensure that the **`tls-ca-bundle.pem`** contains the necessary **root** and **intermediate certificates**.
+
+---
+
+#### **2. Configure the Connection in SQL Developer**
+
+SQL Developer allows you to specify connection properties for SSL/TLS via the connection settings and **Advanced JDBC** options.
+
+##### **Steps to Set Up a Secure TCPS Connection:**
+
+1. **Open SQL Developer** and create a new connection:
+   - Click the **green plus icon** or navigate to **Connections** > **New Connection**.
+
+2. **Enter Basic Connection Information**:
+   - **Connection Name**: Provide a descriptive name.
+   - **Username**: Enter your database username.
+   - **Password**: Enter your password or leave it empty for now.
+   - **Hostname**: Enter the database server hostname.
+   - **Port**: Use the SSL/TLS port, usually **2484** (ask your DBA if unsure).
+   - **Service Name**: Enter the Oracle service name (e.g., `orcl`, `your_service`).
+
+3. **Configure Advanced JDBC Settings**:
+   - In the connection setup window, go to the **"Advanced"** tab.
+   - Scroll down and locate the **Custom JDBC URL** field.
+   - Modify the JDBC URL to use the **TCPS** protocol:
+
+     ```text
+     jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=tcps)(HOST=your-db-hostname)(PORT=2484))(CONNECT_DATA=(SERVICE_NAME=your_service_name)))
+     ```
+
+4. **Add the Wallet or CA Certificate for SSL Validation**:
+   - SQL Developer will need to know where to find the **CA certificate** (the `tls-ca-bundle.pem`) to validate the database server's certificate.
+   
+   - SQL Developer, being a Java application, uses a **Java Truststore** to store trusted certificates. To include your CA certificate, you'll need to import it into the **Java Truststore** used by SQL Developer.
+
+   ##### **Option A: Add Certificate to Java Truststore**:
+
+   1. Locate the **Java Truststore** (`cacerts`) file, usually at:
+      - **Windows**: `C:\Program Files\Oracle\SQL Developer\jdk\lib\security\cacerts`
+      - **Linux/MacOS**: In the corresponding **SQL Developer Java home directory**.
+
+   2. Import the **`tls-ca-bundle.pem`** file into the Truststore using the `keytool` utility:
+
+      ```bash
+      keytool -importcert -file tls-ca-bundle.pem -keystore /path/to/sql-developer/jdk/lib/security/cacerts -alias your_ca_alias
+      ```
+
+      You will be prompted to enter the **Truststore password**, which is typically `changeit` by default.
+
+   ##### **Option B: Direct Truststore Configuration in SQL Developer** (Alternative):
+   
+   If you can't modify the system truststore, you can specify your own **Truststore** in SQL Developer:
+
+   1. Place the **`tls-ca-bundle.pem`** in a secure directory.
+
+   2. In the **Advanced** tab of the connection settings, add the following **JDBC parameters**:
+
+      - **javax.net.ssl.trustStore**: Point this to your custom **Truststore** file.
+
+        ```bash
+        javax.net.ssl.trustStore=/path/to/your/truststore.jks
+        ```
+
+      - **javax.net.ssl.trustStorePassword**: Set the password for the Truststore.
+
+        ```bash
+        javax.net.ssl.trustStorePassword=changeit
+        ```
+
+---
+
+#### **3. Test the Connection**
+
+Once you’ve completed the above steps:
+
+1. Click the **Test** button in SQL Developer to ensure the connection works properly.
+
+2. If the test is successful, save the connection settings.
+
+---
+
+### **If Mutual Authentication is Required**
+
+If your enterprise requires **mutual TLS authentication** (both server and client certificates), you’ll also need to provide a **client certificate**.
+
+1. Obtain your **client certificate** from your security or DBA team, typically in the form of a **.p12** (PKCS#12) file.
+   
+2. Convert the **.p12** to a Java Keystore format using the `keytool` utility:
+
+   ```bash
+   keytool -importkeystore -srckeystore your_client_certificate.p12 -srcstoretype PKCS12 -destkeystore your_keystore.jks -deststoretype JKS
+   ```
+
+3. In SQL Developer, under **Advanced** settings, provide these **JDBC parameters**:
+
+   - **javax.net.ssl.keyStore**: Point to the **keystore** containing your client certificate.
+   - **javax.net.ssl.keyStorePassword**: The password for your keystore.
+
+---
+
+### **Summary of Steps:**
+
+1. **Get the CA certificate** (which you already have in `tls-ca-bundle.pem`).
+2. **Configure SQL Developer** to connect via **TCPS**:
+   - Use the correct **TCPS** JDBC connection string.
+   - Import the CA certificate into SQL Developer’s **Java Truststore**.
+3. **Test the connection** in SQL Developer.
+
+This should allow you to securely connect to the Oracle database using SSL/TLS without needing access to the `listener.ora`, `sqlnet.ora`, or `tnsnames.ora` files.
+
+Let me know if you need any more details or assistance!
