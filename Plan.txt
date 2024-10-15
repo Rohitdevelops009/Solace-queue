@@ -1,0 +1,91 @@
+### Detailed Remediation Plan for Enabling TLS for JDBC Connections
+
+#### 1. **Objective:**
+   Ensure secure data transmission over JDBC by implementing TLS, preventing potential data sniffing and unauthorized access. 
+
+#### 2. **Key Components:**
+   - **Listener.ora** and **SQLnet.ora** file changes for the Oracle DB server.
+   - Obtaining and validating **CA certificates**.
+   - JDBC connection configuration changes by the developer.
+
+---
+
+### **Steps for Remediation:**
+
+#### **1. Listener.ora and SQLnet.ora File Changes (DBA Responsibility):**
+
+   The **DBA team** needs to configure Oracle DB server to support **TCPS** protocol by editing the following files:
+
+   - **listener.ora**:
+     - Add a new entry for TCPS protocol with the relevant port (e.g., 2484).
+     - Example:
+       ```plaintext
+       (ADDRESS=(PROTOCOL=TCPS)(HOST=your-db-hostname)(PORT=2484))
+       ```
+   - **sqlnet.ora**:
+     - Enable SSL authentication and point to the **Oracle Wallet** that stores the certificates.
+     - Example entries:
+       ```plaintext
+       SQLNET.ENCRYPTION_SERVER = REQUIRED
+       SQLNET.ENCRYPTION_TYPES_SERVER = (AES256)
+       SQLNET.AUTHENTICATION_SERVICES = (TCPS)
+       ```
+
+   - Ensure the **Oracle Wallet** is created and configured properly on the server with the correct **server certificates**.
+
+   **Outcome**: The server will be configured to handle **TCPS connections**.
+
+#### **2. CA Certificates (Certificate Authorities and ValidationService Team):**
+
+   The **CA certificates** required for secure communication need to be provided by the **Certificate Authorities (CA)** and validated by the **ValidationService Team**. This will involve:
+
+   - **Obtaining the root and intermediate certificates** used for signing the server certificates.
+   - Ensuring that the **CA bundle** includes all the necessary certificates for the **Oracle Wallet** on the server.
+   - The CA bundle should also be shared with the developers for client-side truststore configuration.
+   
+   **Outcome**: The server will have trusted certificates configured for SSL/TLS communication.
+
+#### **3. Developer Configuration (Developer Responsibility):**
+
+   Developers are responsible for configuring the JDBC connection in their application to use **TCPS**. This involves:
+
+   - **Modifying the JDBC URL** to use the **TCPS protocol** instead of TCP.
+   - Example JDBC URL for SSL:
+     ```plaintext
+     jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCPS)(HOST=your-db-hostname)(PORT=2484))(CONNECT_DATA=(SERVICE_NAME=your-service)))
+     ```
+   - **Configure the SSL Truststore** on the client-side:
+     - The developer will need the CA certificates provided by the **ValidationService Team** to configure the SSL truststore.
+     - You can create a Java KeyStore (JKS) with the CA certificates using the `keytool` command:
+       ```bash
+       keytool -importcert -alias mycert -file tls-ca-bundle.pem -keystore truststore.jks -storepass mypassword
+       ```
+   - Ensure **SQL Developer** or any other client tools are configured to use SSL.
+   
+   **Outcome**: The application will use encrypted communication over **TCPS**, ensuring data confidentiality.
+
+---
+
+### **Implementation JIRA Tasks:**
+
+Based on the plan above, here are the **implementation tasks** to create in Jira:
+
+#### **Task 1: Listener.ora and SQLnet.ora Configuration**
+- **Assigned to**: DBA
+- **Description**: Configure the Oracle DB server to enable TCPS by adding the necessary entries in `listener.ora` and `sqlnet.ora`. Ensure the Oracle Wallet is set up with valid server certificates.
+- **Acceptance Criteria**: The Oracle DB server listens on a TCPS port (e.g., 2484), and connections via TCPS are successfully established.
+
+#### **Task 2: CA Certificates and Validation**
+- **Assigned to**: Certificate Authorities and ValidationService Team
+- **Description**: Provide the necessary CA certificates for the server. Ensure they are correctly validated and included in the Oracle Wallet on the server. Share the certificates with the development team for client-side configuration.
+- **Acceptance Criteria**: CA certificates are successfully imported and validated on the Oracle server and provided to the development team.
+
+#### **Task 3: Developer JDBC Configuration for TCPS**
+- **Assigned to**: Developer
+- **Description**: Modify the JDBC connection string to use TCPS and configure the client-side SSL truststore using the CA certificates. Ensure secure communication between the application and the Oracle DB.
+- **Acceptance Criteria**: Application connects securely to the database over TCPS with encryption verified.
+
+---
+
+### **Final Deliverables:**
+- Secure communication between the application and the database via TLS, ensuring no data leakage in transit.
