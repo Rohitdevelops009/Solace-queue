@@ -1,0 +1,50 @@
+Slide 1: Problem Statement / Current State
+
+Content:
+Teams today face challenges in resolving issues due to fragmented information spread across multiple tools—Confluence for documentation, Jira for task management, and GitHub for code changes. Accessing relevant information requires manual navigation through these platforms, leading to time-consuming searches and inefficiency. This fragmented access slows down problem-solving, increases cognitive load, and risks overlooking critical information.
+
+---
+
+Slide 2: Opportunity Statement / Purpose
+
+Content:
+Imagine a streamlined workspace where all necessary information is pulled into one view. By leveraging AI, we can transform the way teams handle support queries and troubleshoot by integrating Confluence, Jira, and GitHub. This integration would allow users to enter their issues and instantly receive a consolidated, single-page solution, drawing insights from related documentation, tickets, and code changes. The opportunity here is to save time, enhance collaboration, and improve issue resolution accuracy.
+
+---
+
+Slide 3: Solution / Desired State
+
+Content:
+Our solution is an AI-powered system that unifies Confluence, Jira, and GitHub information into a single interface. When users submit an issue, the AI scans relevant documentation, Jira tickets, and GitHub commits to generate a single-page, detailed response. This response includes context from each platform, offering a clear path to resolve the issue based on up-to-date information. The desired outcome is a seamless, efficient problem-solving experience that eliminates the need for manual cross-referencing across tools.
+
+---
+
+Slide 4: Technical Architecture / Workflow
+
+Content:
+
+1. Input: User enters an issue or query in the system interface.
+
+2. Data Extraction:
+
+Confluence: The system accesses relevant Confluence pages using keyword or semantic search, focusing on pages that match the query topic.
+
+Jira: The system retrieves open and historical Jira tickets related to the issue, identifying task progress, assigned teams, and relevant comments.
+
+GitHub: The system cross-references GitHub commits linked to Jira tickets, extracting code changes, pull requests, and comments associated with the issue.
+
+3. AI Analysis:
+
+NLP models process the data, identifying key information from each source.
+
+The system filters and prioritizes the most relevant insights, summarizing documentation, task statuses, and code details.
+
+4. Output:
+
+The AI presents a single-page response that combines insights from Confluence, Jira, and GitHub.
+
+This response includes recommended actions or next steps, providing users with a cohesive, actionable solution.
+
+---
+
+This structure should help convey the problem, opportunity, and solution, along with a clear view of the technical workflow involved. Let me know if you’d like additional details for any section!
