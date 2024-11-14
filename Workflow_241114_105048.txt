@@ -1,0 +1,57 @@
+**End-to-End Workflow (Point-Wise)**
+
+### **1. Frontend Layer (User Interaction)**
+   - **Step 1**: User accesses the web interface and enters a query related to an issue or task.
+   - **Step 2**: The query is sent to the backend via REST/GraphQL API.
+
+### **2. Backend Layer (API Management and Orchestration)**
+   - **Step 3**: The backend receives the query and initiates data retrieval from Confluence, Jira, and GitHub using their APIs.
+   - **Step 4**: The backend authenticates using OAuth 2.0 for secure API access.
+   - **Step 5**: Extracted data from these platforms is passed to the AI processing pipeline.
+
+### **3. AI Model Layer (Data Processing and Analysis)**
+   - **Preprocessing**:
+     - **Step 6**: Text cleaning, normalization, and formatting of the raw data extracted from Confluence, Jira, and GitHub.
+     - **Step 7**: Tokenization and vectorization for easier analysis (using spaCy or similar tools).
+   
+   - **Keyword Extraction and Semantic Search**:
+     - **Step 8**: Utilize **BERT/RoBERTa** to identify relevant documents and information by performing a semantic search.
+
+   - **Summarization**:
+     - **Step 9**: Apply **T5 or BART** models to condense the information and generate summaries for documents and tickets.
+
+   - **Relevance Ranking**:
+     - **Step 10**: Use **Scikit-learn** or a custom ranking algorithm to prioritize the most relevant insights.
+   
+   - **Response Generation**:
+     - **Step 11**: Pass the processed and ranked data through **GPT-4** for generating a cohesive, human-readable response.
+   
+   - **Named Entity Recognition (NER)**:
+     - **Step 12**: Run NER using **spaCy** to highlight key terms, technologies, and names in the response.
+   
+   - **Output Assembly**:
+     - **Step 13**: Compile all processed information into a final single-page response.
+
+### **4. Backend Layer (Post-Processing and Delivery)**
+   - **Step 14**: Format the AI-generated response for frontend delivery (HTML/JSON).
+   - **Step 15**: Store the response and related metadata in **MongoDB** for future reference.
+   - **Step 16**: Check **Redis** for caching the new response for faster future retrieval.
+   - **Step 17**: Send the formatted response back to the frontend.
+
+### **5. Frontend Layer (User Display and Interaction)**
+   - **Step 18**: Render the response on the user interface.
+   - **Step 19**: User views the response, which includes references, action steps, and contacts if necessary.
+
+### **6. Database Layer (Data Management)**
+   - **Step 20**: **MongoDB** logs user queries and responses for audit trails and historical searches.
+   - **Step 21**: **PostgreSQL** updates structured data like metadata for tickets and user interaction logs.
+   - **Step 22**: **Redis** caches processed responses for quick retrieval if the same query is entered again.
+
+### **7. Periodic Synchronization and Updates**
+   - **Step 23**: Scheduled jobs run to periodically sync with Confluence, Jira, and GitHub to update the database with the latest information.
+   - **Step 24**: The ML models and backend logic update processed data in MongoDB and cache frequently accessed data in Redis.
+
+### **Security and Monitoring**
+   - **Step 25**: Monitor system performance using **Grafana + Prometheus** and troubleshoot logs using **ELK Stack (Elasticsearch, Logstash, Kibana)**.
+
+This step-by-step workflow outlines how the system moves from user input to data extraction, processing with ML models, response generation, and delivering a seamless experience while ensuring efficiency and data freshness.
