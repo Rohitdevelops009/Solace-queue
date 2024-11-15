@@ -1,0 +1,191 @@
+If you want to create a Grafana dashboard without using Prometheus, you can push metrics directly from your Python script to a database or other data sources that Grafana supports. Here are some alternatives:
+
+### Option 1: Use **InfluxDB** as a Data Source
+InfluxDB is a time-series database that integrates well with Grafana and can be used to store and query metrics.
+
+**Steps**:
+1. **Install and Run InfluxDB**:
+   - Download and install InfluxDB from [InfluxData's website](https://docs.influxdata.com/influxdb/v2.0/install/).
+   - Start InfluxDB on your local machine.
+
+2. **Install InfluxDB Python Client**:
+   ```bash
+   pip install influxdb-client
+   ```
+
+3. **Modify Your Python Script to Send Metrics to InfluxDB**:
+   ```python
+   from influxdb_client import InfluxDBClient, Point, WritePrecision
+   from influxdb_client.client.write_api import SYNCHRONOUS
+   import time
+
+   # Connect to InfluxDB
+   token = "your_token"  # Use a token if needed for authentication
+   org = "your_org"
+   bucket = "your_bucket"
+   client = InfluxDBClient(url="http://localhost:8086", token=token)
+
+   write_api = client.write_api(write_options=SYNCHRONOUS)
+
+   # Insert large data and track time
+   start_time = time.time()
+   num_records = 100000  # Adjust as needed
+   for i in range(num_records):
+       key = f"trade_record_{i}"
+       value = ''.join(random.choices(string.ascii_letters + string.digits, k=50))
+       # Simulate data insertion logic
+   end_time = time.time()
+
+   # Write metric to InfluxDB
+   point = Point("performance_metrics") \
+       .tag("operation", "insertion") \
+       .field("time_taken_seconds", end_time - start_time) \
+       .time(time.time(), WritePrecision.S)
+
+   write_api.write(bucket=bucket, org=org, record=point)
+   ```
+
+4. **Set Up InfluxDB in Grafana**:
+   - Go to **Configuration** > **Data Sources** in Grafana.
+   - Add **InfluxDB** as a data source and provide connection details (URL, bucket, and credentials).
+   - Create panels with queries to visualize the data.
+
+### Option 2: Use **MySQL/PostgreSQL** for Storing Metrics
+Grafana supports MySQL and PostgreSQL as data sources, and you can write metrics to these databases from your Python script.
+
+**Steps**:
+1. **Install MySQL or PostgreSQL** and create a database for storing metrics.
+2. **Install a Python database driver**:
+   ```bash
+   pip install mysql-connector-python  # For MySQL
+   pip install psycopg2  # For PostgreSQL
+   ```
+
+3. **Modify Your Python Script to Store Metrics**:
+   ```python
+   import mysql.connector
+   import time
+
+   # Connect to MySQL (or use psycopg2 for PostgreSQL)
+   conn = mysql.connector.connect(
+       host="localhost",
+       user="your_username",
+       password="your_password",
+       database="your_database"
+   )
+   cursor = conn.cursor()
+
+   # Create a table to store metrics
+   cursor.execute("""
+       CREATE TABLE IF NOT EXISTS performance_metrics (
+           id INT AUTO_INCREMENT PRIMARY KEY,
+           operation VARCHAR(50),
+           time_taken_seconds FLOAT,
+           timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+       )
+   """)
+
+   # Insert metric after data insertion logic
+   start_time = time.time()
+   # (Your data insertion logic here)
+   end_time = time.time()
+
+   time_taken = end_time - start_time
+   cursor.execute("INSERT INTO performance_metrics (operation, time_taken_seconds) VALUES (%s, %s)",
+                  ("insertion", time_taken))
+   conn.commit()
+
+   cursor.close()
+   conn.close()
+   ```
+
+4. **Set Up MySQL/PostgreSQL in Grafana**:
+   - Go to **Configuration** > **Data Sources** in Grafana.
+   - Add **MySQL** or **PostgreSQL** as a data source.
+   - Use SQL queries in Grafana panels to visualize the metrics.
+
+### Option 3: **Push Custom Metrics to Grafana's Simple JSON Data Source Plugin**
+This option allows you to use a REST API that Grafana can query.
+
+**Steps**:
+1. **Set Up the Simple JSON Data Source Plugin** in Grafana (install via Grafana Plugins).
+2. **Create a REST API** in Python using a framework like Flask or FastAPI that exposes endpoints returning metrics in JSON format.
+
+**Example**:
+```python
+from flask import Flask, jsonify
+import time
+
+app = Flask(__name__)
+
+@app.route('/metrics', methods=['GET'])
+def get_metrics():
+    return jsonify({
+        "data": [
+            {
+                "operation": "insertion",
+                "time_taken_seconds": 1.23,  # Replace with actual metrics
+                "timestamp": time.time()
+            }
+        ]
+    })
+
+if __name__ == "__main__":
+    app.run(port=5000)
+```
+
+3. **Connect Grafana to Your API**:
+   - Use the Simple JSON Data Source plugin to point to your API endpoint (e.g., `http://localhost:5000/metrics`).
+   - Create panels to query and display data.
+
+These methods provide flexibility and allow you to create a Grafana dashboard without Prometheus while still being able to visualize and monitor performance metrics of your POC.
+
+import csv
+import time
+import random
+import string
+import redis
+
+# Connect to Redis
+redis_client = redis.Redis(host='localhost', port=6379, db=0)
+
+# Function to generate random data
+def generate_random_string(length=50):
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+
+# Function to simulate data insertion with caching and log metrics
+def generate_metrics_and_save_to_csv(num_records=100000, csv_filename="caching_metrics.csv"):
+    start_time = time.time()
+    total_time_taken = 0
+
+    # Open CSV file for writing
+    with open(csv_filename, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(["record_number", "operation", "time_taken_seconds", "timestamp"])  # CSV header
+
+        for i in range(num_records):
+            # Generate random key-value pair
+            key = f"trade_record_{i}"
+            value = generate_random_string()
+
+            # Measure time taken to insert data into Redis cache
+            record_start_time = time.time()
+            redis_client.set(key, value)  # Insert data into cache
+            record_end_time = time.time()
+
+            time_taken = record_end_time - record_start_time
+            total_time_taken += time_taken
+
+            # Write each record's metric to the CSV file
+            writer.writerow([i, "cache_insertion", time_taken, record_end_time])
+
+        end_time = time.time()
+        total_time = end_time - start_time
+
+        # Log total insertion time to the CSV file
+        writer.writerow(["-", "total_cache_insertion", total_time, end_time])
+
+    print(f"Inserted {num_records} records into Redis cache in {total_time:.2f} seconds.")
+
+# Run the function to generate and save metrics with caching
+generate_metrics_and_save_to_csv(num_records=100000, csv_filename="caching_metrics.csv")
