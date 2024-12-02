@@ -1,0 +1,64 @@
+import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+import com.tangosol.net.CacheFactory;
+import com.tangosol.net.NamedCache;
+import com.tangosol.net.cache.ContinuousQueryCache;
+import com.tangosol.util.Filter;
+import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import org.springframework.web.util.HtmlUtils;
+
+import java.util.HashSet;
+import java.util.Set;
+
+public class QueryTabTest {
+
+    @Test
+    public void executeQueryTestWithNullAndValidKeys() {
+        QueryTab queryTab = new QueryTab();
+        queryTab.setCacheName("broadcast-data/customer-balance");
+
+        // Mocking Filter, NamedCache, and ContinuousQueryCache
+        Filter filter = mock(Filter.class);
+        NamedCache namedCache = mock(NamedCache.class);
+        ContinuousQueryCache continuousQueryCache = mock(ContinuousQueryCache.class);
+
+        // Mock static methods in CacheFactory and QueryHelper
+        try (MockedStatic<CacheFactory> cacheFactoryMock = mockStatic(CacheFactory.class);
+             MockedStatic<QueryHelper> queryHelperMock = mockStatic(QueryHelper.class)) {
+
+            // Stubbing static methods
+            cacheFactoryMock.when(() -> CacheFactory.getCache("broadcast-data/customer-balance"))
+                    .thenReturn(namedCache);
+            queryHelperMock.when(() -> QueryHelper.createFilter(anyString())).thenReturn(filter);
+
+            // Mocking keySet to contain valid keys and null
+            Set<Object> keySet = new HashSet<>();
+            keySet.add("key1");
+            keySet.add("key2");
+            keySet.add(null);
+            when(namedCache.keySet(any(Filter.class))).thenReturn(keySet);
+
+            // Executing the method
+            Object result = queryTab.executeQuery("values.get('definedInEntities').get('values') = 'Y'");
+
+            // Assertions
+            assertNotNull(result);
+            assertTrue(result instanceof ArrayList);
+            ArrayList<String> resultList = (ArrayList<String>) result;
+
+            // Verify sanitized keys
+            assertEquals(2, resultList.size());
+            assertTrue(resultList.contains(HtmlUtils.htmlEscape("key1")));
+            assertTrue(resultList.contains(HtmlUtils.htmlEscape("key2")));
+
+            // Verify static method calls
+            cacheFactoryMock.verify(() -> CacheFactory.getCache("broadcast-data/customer-balance"));
+            queryHelperMock.verify(() -> QueryHelper.createFilter(anyString()));
+
+            // Verifying that a null key triggers a log warning (mock logger or inspect output)
+            // Optionally, mock the logger if needed for assertions
+        }
+    }
+}
