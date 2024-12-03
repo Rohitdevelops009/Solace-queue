@@ -1,0 +1,58 @@
+@Test
+public void testToHexBytes() {
+    byte[] input = {0x1A, 0x2B, 0x3C};
+    String result = factory.toHexBytes(input);
+    assertNotNull(result);
+    assertTrue(result.contains("1A 2B 3C"));
+}
+
+@Test
+public void testToHex() {
+    String input = "TestString";
+    String result = factory.toHex(input);
+    assertNotNull(result);
+    assertTrue(result.contains("54 65 73 74")); // Hex for "Test"
+}
+
+@Test
+public void testPrintMessageUsingDictionary() {
+    // Assuming dictionary is initialized properly
+    Map<String, String> messageData = new HashMap<>();
+    messageData.put("transaction_no", "123T");
+    String result = factory.printMessage("tradeMessage", messageData);
+    assertNotNull(result);
+}
+@Test
+public void testParseMessage() {
+    String message = "parsedMessageString";
+    Map<String, Object> result = factory.parseMessage("tradeMessage", message);
+    assertNotNull(result);
+    assertTrue(result.containsKey("transaction_no"));
+}
+@Test
+public void testGetSupportedMessages() {
+    Set<String> messages = factory.getSupportedMessages();
+    assertNotNull(messages);
+    assertTrue(messages.contains("tradeMessage"));
+}
+
+@Test
+public void testGetMessageLength() {
+    int length = factory.getMessageLength("tradeMessage");
+    assertTrue(length > 0);
+}
+@Test
+public void testGetFieldMapAndField() {
+    LinkedHashMap<String, Field> fields = factory.getFieldMap("tradeMessage");
+    assertNotNull(fields);
+
+    Field field = factory.getField("tradeMessage", "transaction_no");
+    assertNotNull(field);
+    assertEquals("transaction_no", field.getName());
+}
+@Test
+public void testParseMessageWithInvalidCode() {
+    assertThrows(UnregisteredMessageException.class, () -> {
+        factory.parseMessage("invalidCode", "message");
+    });
+}
