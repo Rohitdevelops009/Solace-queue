@@ -1,0 +1,42 @@
+@Test
+    void testQueryCacheProcessing() {
+        // Mock input
+        String query = "<script>alert('test');</script>";
+        String sanitizedQuery = HtmlUtils.htmlEscape(query);
+
+        // Mock cache
+        NamedCache mockCache = mock(NamedCache.class);
+        when(CacheFactory.getCache("testCache")).thenReturn(mockCache);
+
+        // Mock filter and Continuous QueryCache
+        Filter mockFilter = AlwaysFilter.INSTANCE;
+        ContinuousQueryCache mockQueryCache = mock(ContinuousQueryCache.class);
+
+        Map<Object, Object> mockQueryResults = new HashMap<>();
+        mockQueryResults.put("<key1>", "value1");
+        mockQueryResults.put(null, "value2"); // Include a null key for testing
+        mockQueryResults.put("<key2>", "value3");
+
+        when(mockQueryCache.keySet()).thenReturn(mockQueryResults.keySet());
+        when(mockQueryCache.size()).thenReturn(mockQueryResults.size());
+
+        // Assume decodeQueryString and createFilter are utility methods
+        when(QueryHelper.createFilter(Mockito.anyString())).thenReturn(mockFilter);
+
+        // Code logic execution
+        ArrayList<String> cacheKeyList = new ArrayList<>();
+
+        for (Object cacheKey : mockQueryCache.keySet()) {
+            if (cacheKey != null) {
+                String sanitizedKey = HtmlUtils.htmlEscape(cacheKey.toString());
+                cacheKeyList.add(sanitizedKey);
+            }
+        }
+
+        // Assertions
+        assertEquals(2, cacheKeyList.size());
+        assertTrue(cacheKeyList.contains("&lt;key1&gt;"));
+        assertTrue(cacheKeyList.contains("&lt;key2&gt;"));
+        verify(mockQueryCache, times(1)).keySet();
+        verify(mockQueryCache, times(1)).size();
+    }
