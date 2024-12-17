@@ -1,320 +1,152 @@
-package com.wellsfargo.cat.position.streaming.model;
+package com.wellsfargo.cat.position.streaming.service;
 
+import com.wellsfargo.cat.position.streaming.config.PositionEventReceiverConfig;
+import com.wellsfargo.cat.position.streaming.service.PositionProcessorService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+import javax.jms.Message;
+import javax.jms.TextMessage;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-class PositionDistributionExceptionTest {
+class PositionEventListenerServiceTest {
 
-    @Test
-    void testDefaultConstructor() {
-        // Act
-        PositionDistributionException exception = new PositionDistributionException();
+    @InjectMocks
+    private PositionEventListenerService positionEventListenerService;
 
-        // Assert
-        assertNull(exception.getMessage());
-        assertNull(exception.getCause());
+    @Mock
+    private PositionEventReceiverConfig positionEventReceiverConfig;
+
+    @Mock
+    private PositionProcessorService positionProcessorService;
+
+    @Mock
+    private ExecutorService[] partitionedExecutors;
+
+    @Mock
+    private TextMessage textMessage;
+
+    @Mock
+    private Message message;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
     }
 
     @Test
-    void testConstructorWithMessage() {
+    void testInit() {
+        // Act
+        positionEventListenerService.init();
+
+        // Assert
+        assertNotNull(positionEventListenerService);
+    }
+
+    @Test
+    void testStopConsumer() throws Exception {
         // Arrange
-        String message = "Test exception message";
+        positionEventListenerService.subscriber = mock(JmsControlledListener.class);
 
         // Act
-        PositionDistributionException exception = new PositionDistributionException(message);
+        positionEventListenerService.stopConsumer();
 
         // Assert
-        assertEquals(message, exception.getMessage());
-        assertNull(exception.getCause());
+        verify(positionEventListenerService.subscriber).stopConsumer();
     }
 
     @Test
-    void testConstructorWithCause() {
+    void testStopConsumer_Exception() throws Exception {
         // Arrange
-        Exception cause = new Exception("Cause exception");
-
-        // Act
-        PositionDistributionException exception = new PositionDistributionException(cause);
-
-        // Assert
-        assertEquals(cause, exception.getCause());
-        assertEquals("java.lang.Exception: Cause exception", exception.getMessage());
-    }
-
-    @Test
-    void testConstructorWithMessageAndCause() {
-        // Arrange
-        String message = "Test exception message";
-        Exception cause = new Exception("Cause exception");
-
-        // Act
-        PositionDistributionException exception = new PositionDistributionException(message, cause);
-
-        // Assert
-        assertEquals(message, exception.getMessage());
-        assertEquals(cause, exception.getCause());
-    }
-}
-
-Response:
-
-package com.wellsfargo.cat.position.streaming.model;
-
-import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
-
-class PositionDistributionResponseTest {
-
-    @Test
-    void testNoArgsConstructor() {
-        // Act
-        PositionDistributionResponse<String> response = new PositionDistributionResponse<>();
-
-        // Assert
-        assertNull(response.getData());
-        assertNull(response.getError());
-        assertNull(response.getInfo());
-    }
-
-    @Test
-    void testAllArgsConstructor() {
-        // Arrange
-        String data = "Test Data";
-        String error = "Test Error";
-        String info = "Test Info";
-
-        // Act
-        PositionDistributionResponse<String> response = new PositionDistributionResponse<>(data, error, info);
-
-        // Assert
-        assertEquals(data, response.getData());
-        assertEquals(error, response.getError());
-        assertEquals(info, response.getInfo());
-    }
-
-    @Test
-    void testBuilder() {
-        // Arrange
-        String data = "Test Data";
-        String error = "Test Error";
-        String info = "Test Info";
-
-        // Act
-        PositionDistributionResponse<String> response = PositionDistributionResponse.<String>builder()
-                .data(data)
-                .error(error)
-                .info(info)
-                .build();
-
-        // Assert
-        assertEquals(data, response.getData());
-        assertEquals(error, response.getError());
-        assertEquals(info, response.getInfo());
-    }
-
-    @Test
-    void testSettersAndGetters() {
-        // Arrange
-        PositionDistributionResponse<String> response = new PositionDistributionResponse<>();
-        String data = "Test Data";
-        String error = "Test Error";
-        String info = "Test Info";
-
-        // Act
-        response.setData(data);
-        response.setError(error);
-        response.setInfo(info);
-
-        // Assert
-        assertEquals(data, response.getData());
-        assertEquals(error, response.getError());
-        assertEquals(info, response.getInfo());
-    }
-
-    @Test
-    void testToString() {
-        // Arrange
-        String data = "Test Data";
-        String error = "Test Error";
-        String info = "Test Info";
-        PositionDistributionResponse<String> response = new PositionDistributionResponse<>(data, error, info);
-
-        // Act
-        String toString = response.toString();
-
-        // Assert
-        assertTrue(toString.contains("data=Test Data"));
-        assertTrue(toString.contains("error=Test Error"));
-        assertTrue(toString.contains("info=Test Info"));
-    }
-
-    @Test
-    void testEqualsAndHashCode() {
-        // Arrange
-        PositionDistributionResponse<String> response1 = PositionDistributionResponse.<String>builder()
-                .data("Test Data")
-                .error("Test Error")
-                .info("Test Info")
-                .build();
-
-        PositionDistributionResponse<String> response2 = PositionDistributionResponse.<String>builder()
-                .data("Test Data")
-                .error("Test Error")
-                .info("Test Info")
-                .build();
+        positionEventListenerService.subscriber = mock(JmsControlledListener.class);
+        doThrow(new RuntimeException("Subscriber Error")).when(positionEventListenerService.subscriber).stopConsumer();
 
         // Act & Assert
-        assertEquals(response1, response2);
-        assertEquals(response1.hashCode(), response2.hashCode());
+        assertThrows(Exception.class, positionEventListenerService::stopConsumer);
     }
 
     @Test
-    void testNotEquals() {
+    void testSubscribeOnAppStartup() {
         // Arrange
-        PositionDistributionResponse<String> response1 = PositionDistributionResponse.<String>builder()
-                .data("Test Data")
-                .error("Test Error")
-                .info("Test Info")
-                .build();
-
-        PositionDistributionResponse<String> response2 = PositionDistributionResponse.<String>builder()
-                .data("Different Data")
-                .error("Test Error")
-                .info("Test Info")
-                .build();
-
-        // Act & Assert
-        assertNotEquals(response1, response2);
-    }
-}
-
-Metadata:
-
-package com.wellsfargo.cat.position.streaming.model;
-
-import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
-
-class PositionMessageMetaDataTest {
-
-    @Test
-    void testDefaultValues() {
-        // Act
-        PositionMessageMetaData metaData = new PositionMessageMetaData();
-
-        // Assert
-        assertNull(metaData.getEventId());
-        assertNull(metaData.getSeqNo());
-        assertNull(metaData.getProcessId());
-        assertNull(metaData.getEnv());
-        assertEquals("1CAT", metaData.getAppName());
-        assertNull(metaData.getEventType());
-        assertNull(metaData.getEventMessageFormat());
-        assertEquals(0, metaData.getRetransmissionCounter());
-    }
-
-    @Test
-    void testSettersAndGetters() {
-        // Arrange
-        PositionMessageMetaData metaData = new PositionMessageMetaData();
-        String eventId = "12345";
-        Long seqNo = 1001L;
-        String processId = "PROC_001";
-        String env = "Test";
-        String appName = "TestApp";
-        String eventType = "EventTypeA";
-        String eventMessageFormat = "JSON";
-        int retransmissionCounter = 5;
+        when(positionEventReceiverConfig.getPositionEventListnerQueue()).thenReturn("TestQueue");
+        JmsControlledListener mockSubscriber = mock(JmsControlledListener.class);
+        positionEventListenerService.subscriber = mockSubscriber;
 
         // Act
-        metaData.setEventId(eventId);
-        metaData.setSeqNo(seqNo);
-        metaData.setProcessId(processId);
-        metaData.setEnv(env);
-        metaData.setAppName(appName);
-        metaData.setEventType(eventType);
-        metaData.setEventMessageFormat(eventMessageFormat);
-        metaData.setRetransmissionCounter(retransmissionCounter);
+        positionEventListenerService.subscribeOnAppStartup();
 
         // Assert
-        assertEquals(eventId, metaData.getEventId());
-        assertEquals(seqNo, metaData.getSeqNo());
-        assertEquals(processId, metaData.getProcessId());
-        assertEquals(env, metaData.getEnv());
-        assertEquals(appName, metaData.getAppName());
-        assertEquals(eventType, metaData.getEventType());
-        assertEquals(eventMessageFormat, metaData.getEventMessageFormat());
-        assertEquals(retransmissionCounter, metaData.getRetransmissionCounter());
+        verify(mockSubscriber, never()).subscribe(anyString(), any());
+        verify(mockSubscriber, never()).startConsumer();
     }
 
     @Test
-    void testToString() {
+    void testExtractMessageProperties() throws Exception {
         // Arrange
-        PositionMessageMetaData metaData = new PositionMessageMetaData();
-        metaData.setEventId("12345");
-        metaData.setSeqNo(1001L);
-        metaData.setProcessId("PROC_001");
-        metaData.setEnv("Test");
-        metaData.setAppName("TestApp");
-        metaData.setEventType("EventTypeA");
-        metaData.setEventMessageFormat("JSON");
-        metaData.setRetransmissionCounter(5);
+        when(message.getPropertyNames()).thenReturn(new java.util.Vector<>(Map.of("key1", "value1").keySet()).elements());
+        when(message.getStringProperty("key1")).thenReturn("value1");
 
         // Act
-        String toString = metaData.toString();
+        Map<String, String> result = positionEventListenerService.extractMessageProperties(message);
 
         // Assert
-        assertTrue(toString.contains("eventId=12345"));
-        assertTrue(toString.contains("seqNo=1001"));
-        assertTrue(toString.contains("processId=PROC_001"));
-        assertTrue(toString.contains("env=Test"));
-        assertTrue(toString.contains("appName=TestApp"));
-        assertTrue(toString.contains("eventType=EventTypeA"));
-        assertTrue(toString.contains("eventMessageFormat=JSON"));
-        assertTrue(toString.contains("retransmissionCounter=5"));
+        assertEquals(2, result.size()); // 1 property + PROCESSING_START_TIME_EPOCH
+        assertEquals("value1", result.get("key1"));
+        assertNotNull(result.get("PROCESSING_START_TIME_EPOCH"));
     }
 
     @Test
-    void testEqualsAndHashCode() {
+    void testMessageListener_OnMessage() throws Exception {
         // Arrange
-        PositionMessageMetaData metaData1 = new PositionMessageMetaData();
-        metaData1.setEventId("12345");
-        metaData1.setSeqNo(1001L);
-        metaData1.setProcessId("PROC_001");
-        metaData1.setEnv("Test");
-        metaData1.setAppName("TestApp");
-        metaData1.setEventType("EventTypeA");
-        metaData1.setEventMessageFormat("JSON");
-        metaData1.setRetransmissionCounter(5);
+        when(textMessage.getStringProperty("CUSIP")).thenReturn("TestCusip");
+        when(textMessage.getText()).thenReturn("TestMessage");
 
-        PositionMessageMetaData metaData2 = new PositionMessageMetaData();
-        metaData2.setEventId("12345");
-        metaData2.setSeqNo(1001L);
-        metaData2.setProcessId("PROC_001");
-        metaData2.setEnv("Test");
-        metaData2.setAppName("TestApp");
-        metaData2.setEventType("EventTypeA");
-        metaData2.setEventMessageFormat("JSON");
-        metaData2.setRetransmissionCounter(5);
+        int partition = 0;
+        ExecutorService mockExecutor = mock(ExecutorService.class);
+        partitionedExecutors = new ExecutorService[]{mockExecutor};
 
-        // Act & Assert
-        assertEquals(metaData1, metaData2);
-        assertEquals(metaData1.hashCode(), metaData2.hashCode());
+        positionEventListenerService.partitionedExecutors = partitionedExecutors;
+
+        // Act
+        positionEventListenerService.messageListener().onMessage(textMessage);
+
+        // Assert
+        verify(mockExecutor).submit(any(Runnable.class));
     }
 
     @Test
-    void testNotEquals() {
+    void testProcessMessage() throws Exception {
         // Arrange
-        PositionMessageMetaData metaData1 = new PositionMessageMetaData();
-        metaData1.setEventId("12345");
+        when(message.getStringProperty("CUSIP")).thenReturn("TestCusip");
+        when(message.getText()).thenReturn("TestMessage");
 
-        PositionMessageMetaData metaData2 = new PositionMessageMetaData();
-        metaData2.setEventId("67890");
+        Map<String, String> mockProperties = new HashMap<>();
+        mockProperties.put("key", "value");
+        when(positionEventListenerService.extractMessageProperties(message)).thenReturn(mockProperties);
+
+        // Act
+        positionEventListenerService.processMessage(message);
+
+        // Assert
+        verify(positionProcessorService).processPosition(anyString(), eq(mockProperties));
+    }
+
+    @Test
+    void testProcessMessage_Exception() throws Exception {
+        // Arrange
+        when(message.getStringProperty("CUSIP")).thenReturn("TestCusip");
+        when(message.getText()).thenReturn("TestMessage");
+        doThrow(new RuntimeException("Processing Error")).when(positionProcessorService).processPosition(anyString(), anyMap());
 
         // Act & Assert
-        assertNotEquals(metaData1, metaData2);
+        assertDoesNotThrow(() -> positionEventListenerService.processMessage(message));
     }
 }
