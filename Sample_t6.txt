@@ -1,0 +1,125 @@
+import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+import com.wellsfargo.cat.position.streaming.service.PositionProcessorService;
+import com.wellsfargo.cat.position.streaming.service.PositionPublisherService;
+import com.wellsfargo.cat.position.streaming.service.PositionReconPublisherService;
+import com.wellsfargo.cat.position.streaming.config.PositionPublisherConfig;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.*;
+import org.slf4j.Logger;
+
+import java.util.Map;
+import java.util.UUID;
+
+class PositionProcessorServiceTest {
+
+    @Mock
+    private PositionPublisherService positionPublisherService;
+
+    @Mock
+    private PositionReconPublisherService positionReconPublisherService;
+
+    @Mock
+    private PositionPublisherConfig positionPublisherConfig;
+
+    @Mock
+    private Logger LOGGER;
+
+    @InjectMocks
+    private PositionProcessorService positionProcessorService;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    void testProcessPosition() {
+        // Arrange: Mocking PositionPublisherConfig and Message Properties
+        Map<String, String> messagePropertyMap = mock(Map.class);
+        when(messagePropertyMap.get("CUSIP")).thenReturn("CUSIP12345");
+        when(messagePropertyMap.get("PARTITION_KEY")).thenReturn("PartitionKey");
+
+        // Mock the configuration
+        when(positionPublisherConfig.instanceId).thenReturn("Instance123");
+        when(positionPublisherConfig.hostName).thenReturn("localhost");
+        when(positionPublisherConfig.assetClass).thenReturn("AssetClass");
+
+        // Mock the PositionPublisherService behavior
+        doNothing().when(positionPublisherService).publish(anyString(), anyMap());
+
+        // Act: Call the processPosition method
+        positionProcessorService.processPosition("positionJson", messagePropertyMap);
+
+        // Assert: Verify interactions and side effects
+        verify(positionPublisherService, times(1)).publish(anyString(), anyMap()); // Ensures publish is called
+        verify(positionReconPublisherService, times(1)).publish(anyString(), anyMap()); // Ensures positionRecon is called
+    }
+
+    @Test
+    void testProcessRealTimePosition() {
+        // Arrange: Mocking PositionPublisherConfig and Message Properties
+        Map<String, String> messagePropertyMap = mock(Map.class);
+        when(messagePropertyMap.get("PROCESSING_START_TIME_EPOCH")).thenReturn("1000");
+        when(messagePropertyMap.get("CAT_SERVER_PROCESSING_TIME")).thenReturn("500");
+        when(messagePropertyMap.get("EVENT_PUBLISH_TIME")).thenReturn("1500");
+
+        // Mock the PositionPublisherService behavior
+        doNothing().when(positionPublisherService).publish(anyString(), anyMap());
+
+        // Act: Call the processRealTimePosition method
+        positionProcessorService.processRealTimePosition(
+            mock(Position.class),
+            mock(Map.class),
+            "positionJson",
+            messagePropertyMap,
+            "messageKey"
+        );
+
+        // Assert: Verify interactions
+        verify(positionPublisherService, times(1)).publish(anyString(), anyMap());
+    }
+
+    @Test
+    void testProcessPositionRecon() {
+        // Arrange: Mocking PositionPublisherConfig and Message Properties
+        Map<String, Object> metadata = mock(Map.class);
+        Position position = mock(Position.class);
+
+        // Mock the PositionReconPublisherService behavior
+        doNothing().when(positionReconPublisherService).publish(anyString(), anyMap());
+
+        // Act: Call the processPositionRecon method
+        positionProcessorService.processPositionRecon(position, metadata, "messageKey");
+
+        // Assert: Verify that the publish method of positionReconPublisherService is called
+        verify(positionReconPublisherService, times(1)).publish(anyString(), anyMap());
+    }
+
+    @Test
+    void testGetMessageMetaData() {
+        // Arrange: Set a retransmission count
+        int retransmissionCount = 3;
+
+        // Act: Call the getMessageMetaData method
+        var result = positionProcessorService.getMessageMetaData(retransmissionCount);
+
+        // Assert: Verify the messageMetaData object is properly populated
+        assertNotNull(result);
+        assertEquals(Long.valueOf(1), result.getSeallo());
+        assertEquals("ICAT", result.getProcessId());
+        assertEquals("POSITION", result.getEventType());
+    }
+
+    @Test
+    void testExceptionHandling() {
+        // Arrange: Setup invalid configuration or invalid parameters to throw an exception
+        Map<String, String> invalidMessagePropertyMap = mock(Map.class);
+        when(invalidMessagePropertyMap.get("CUSIP")).thenThrow(new RuntimeException("Invalid CUSIP"));
+
+        // Act & Assert: Verify that the method throws the expected exception
+        assertThrows(RuntimeException.class, () -> positionProcessorService.processPosition("invalidJson", invalidMessagePropertyMap));
+    }
+}
