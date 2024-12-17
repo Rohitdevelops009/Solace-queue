@@ -1,0 +1,320 @@
+package com.wellsfargo.cat.position.streaming.model;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class PositionDistributionExceptionTest {
+
+    @Test
+    void testDefaultConstructor() {
+        // Act
+        PositionDistributionException exception = new PositionDistributionException();
+
+        // Assert
+        assertNull(exception.getMessage());
+        assertNull(exception.getCause());
+    }
+
+    @Test
+    void testConstructorWithMessage() {
+        // Arrange
+        String message = "Test exception message";
+
+        // Act
+        PositionDistributionException exception = new PositionDistributionException(message);
+
+        // Assert
+        assertEquals(message, exception.getMessage());
+        assertNull(exception.getCause());
+    }
+
+    @Test
+    void testConstructorWithCause() {
+        // Arrange
+        Exception cause = new Exception("Cause exception");
+
+        // Act
+        PositionDistributionException exception = new PositionDistributionException(cause);
+
+        // Assert
+        assertEquals(cause, exception.getCause());
+        assertEquals("java.lang.Exception: Cause exception", exception.getMessage());
+    }
+
+    @Test
+    void testConstructorWithMessageAndCause() {
+        // Arrange
+        String message = "Test exception message";
+        Exception cause = new Exception("Cause exception");
+
+        // Act
+        PositionDistributionException exception = new PositionDistributionException(message, cause);
+
+        // Assert
+        assertEquals(message, exception.getMessage());
+        assertEquals(cause, exception.getCause());
+    }
+}
+
+Response:
+
+package com.wellsfargo.cat.position.streaming.model;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class PositionDistributionResponseTest {
+
+    @Test
+    void testNoArgsConstructor() {
+        // Act
+        PositionDistributionResponse<String> response = new PositionDistributionResponse<>();
+
+        // Assert
+        assertNull(response.getData());
+        assertNull(response.getError());
+        assertNull(response.getInfo());
+    }
+
+    @Test
+    void testAllArgsConstructor() {
+        // Arrange
+        String data = "Test Data";
+        String error = "Test Error";
+        String info = "Test Info";
+
+        // Act
+        PositionDistributionResponse<String> response = new PositionDistributionResponse<>(data, error, info);
+
+        // Assert
+        assertEquals(data, response.getData());
+        assertEquals(error, response.getError());
+        assertEquals(info, response.getInfo());
+    }
+
+    @Test
+    void testBuilder() {
+        // Arrange
+        String data = "Test Data";
+        String error = "Test Error";
+        String info = "Test Info";
+
+        // Act
+        PositionDistributionResponse<String> response = PositionDistributionResponse.<String>builder()
+                .data(data)
+                .error(error)
+                .info(info)
+                .build();
+
+        // Assert
+        assertEquals(data, response.getData());
+        assertEquals(error, response.getError());
+        assertEquals(info, response.getInfo());
+    }
+
+    @Test
+    void testSettersAndGetters() {
+        // Arrange
+        PositionDistributionResponse<String> response = new PositionDistributionResponse<>();
+        String data = "Test Data";
+        String error = "Test Error";
+        String info = "Test Info";
+
+        // Act
+        response.setData(data);
+        response.setError(error);
+        response.setInfo(info);
+
+        // Assert
+        assertEquals(data, response.getData());
+        assertEquals(error, response.getError());
+        assertEquals(info, response.getInfo());
+    }
+
+    @Test
+    void testToString() {
+        // Arrange
+        String data = "Test Data";
+        String error = "Test Error";
+        String info = "Test Info";
+        PositionDistributionResponse<String> response = new PositionDistributionResponse<>(data, error, info);
+
+        // Act
+        String toString = response.toString();
+
+        // Assert
+        assertTrue(toString.contains("data=Test Data"));
+        assertTrue(toString.contains("error=Test Error"));
+        assertTrue(toString.contains("info=Test Info"));
+    }
+
+    @Test
+    void testEqualsAndHashCode() {
+        // Arrange
+        PositionDistributionResponse<String> response1 = PositionDistributionResponse.<String>builder()
+                .data("Test Data")
+                .error("Test Error")
+                .info("Test Info")
+                .build();
+
+        PositionDistributionResponse<String> response2 = PositionDistributionResponse.<String>builder()
+                .data("Test Data")
+                .error("Test Error")
+                .info("Test Info")
+                .build();
+
+        // Act & Assert
+        assertEquals(response1, response2);
+        assertEquals(response1.hashCode(), response2.hashCode());
+    }
+
+    @Test
+    void testNotEquals() {
+        // Arrange
+        PositionDistributionResponse<String> response1 = PositionDistributionResponse.<String>builder()
+                .data("Test Data")
+                .error("Test Error")
+                .info("Test Info")
+                .build();
+
+        PositionDistributionResponse<String> response2 = PositionDistributionResponse.<String>builder()
+                .data("Different Data")
+                .error("Test Error")
+                .info("Test Info")
+                .build();
+
+        // Act & Assert
+        assertNotEquals(response1, response2);
+    }
+}
+
+Metadata:
+
+package com.wellsfargo.cat.position.streaming.model;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class PositionMessageMetaDataTest {
+
+    @Test
+    void testDefaultValues() {
+        // Act
+        PositionMessageMetaData metaData = new PositionMessageMetaData();
+
+        // Assert
+        assertNull(metaData.getEventId());
+        assertNull(metaData.getSeqNo());
+        assertNull(metaData.getProcessId());
+        assertNull(metaData.getEnv());
+        assertEquals("1CAT", metaData.getAppName());
+        assertNull(metaData.getEventType());
+        assertNull(metaData.getEventMessageFormat());
+        assertEquals(0, metaData.getRetransmissionCounter());
+    }
+
+    @Test
+    void testSettersAndGetters() {
+        // Arrange
+        PositionMessageMetaData metaData = new PositionMessageMetaData();
+        String eventId = "12345";
+        Long seqNo = 1001L;
+        String processId = "PROC_001";
+        String env = "Test";
+        String appName = "TestApp";
+        String eventType = "EventTypeA";
+        String eventMessageFormat = "JSON";
+        int retransmissionCounter = 5;
+
+        // Act
+        metaData.setEventId(eventId);
+        metaData.setSeqNo(seqNo);
+        metaData.setProcessId(processId);
+        metaData.setEnv(env);
+        metaData.setAppName(appName);
+        metaData.setEventType(eventType);
+        metaData.setEventMessageFormat(eventMessageFormat);
+        metaData.setRetransmissionCounter(retransmissionCounter);
+
+        // Assert
+        assertEquals(eventId, metaData.getEventId());
+        assertEquals(seqNo, metaData.getSeqNo());
+        assertEquals(processId, metaData.getProcessId());
+        assertEquals(env, metaData.getEnv());
+        assertEquals(appName, metaData.getAppName());
+        assertEquals(eventType, metaData.getEventType());
+        assertEquals(eventMessageFormat, metaData.getEventMessageFormat());
+        assertEquals(retransmissionCounter, metaData.getRetransmissionCounter());
+    }
+
+    @Test
+    void testToString() {
+        // Arrange
+        PositionMessageMetaData metaData = new PositionMessageMetaData();
+        metaData.setEventId("12345");
+        metaData.setSeqNo(1001L);
+        metaData.setProcessId("PROC_001");
+        metaData.setEnv("Test");
+        metaData.setAppName("TestApp");
+        metaData.setEventType("EventTypeA");
+        metaData.setEventMessageFormat("JSON");
+        metaData.setRetransmissionCounter(5);
+
+        // Act
+        String toString = metaData.toString();
+
+        // Assert
+        assertTrue(toString.contains("eventId=12345"));
+        assertTrue(toString.contains("seqNo=1001"));
+        assertTrue(toString.contains("processId=PROC_001"));
+        assertTrue(toString.contains("env=Test"));
+        assertTrue(toString.contains("appName=TestApp"));
+        assertTrue(toString.contains("eventType=EventTypeA"));
+        assertTrue(toString.contains("eventMessageFormat=JSON"));
+        assertTrue(toString.contains("retransmissionCounter=5"));
+    }
+
+    @Test
+    void testEqualsAndHashCode() {
+        // Arrange
+        PositionMessageMetaData metaData1 = new PositionMessageMetaData();
+        metaData1.setEventId("12345");
+        metaData1.setSeqNo(1001L);
+        metaData1.setProcessId("PROC_001");
+        metaData1.setEnv("Test");
+        metaData1.setAppName("TestApp");
+        metaData1.setEventType("EventTypeA");
+        metaData1.setEventMessageFormat("JSON");
+        metaData1.setRetransmissionCounter(5);
+
+        PositionMessageMetaData metaData2 = new PositionMessageMetaData();
+        metaData2.setEventId("12345");
+        metaData2.setSeqNo(1001L);
+        metaData2.setProcessId("PROC_001");
+        metaData2.setEnv("Test");
+        metaData2.setAppName("TestApp");
+        metaData2.setEventType("EventTypeA");
+        metaData2.setEventMessageFormat("JSON");
+        metaData2.setRetransmissionCounter(5);
+
+        // Act & Assert
+        assertEquals(metaData1, metaData2);
+        assertEquals(metaData1.hashCode(), metaData2.hashCode());
+    }
+
+    @Test
+    void testNotEquals() {
+        // Arrange
+        PositionMessageMetaData metaData1 = new PositionMessageMetaData();
+        metaData1.setEventId("12345");
+
+        PositionMessageMetaData metaData2 = new PositionMessageMetaData();
+        metaData2.setEventId("67890");
+
+        // Act & Assert
+        assertNotEquals(metaData1, metaData2);
+    }
+}
