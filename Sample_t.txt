@@ -1,0 +1,115 @@
+package com.wellsfargo.cat.position.streaming.config;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.env.Environment;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import java.net.InetAddress;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class PositionEventReceiverConfigTest {
+
+    @Mock
+    private Environment environment;
+
+    @InjectMocks
+    private PositionEventReceiverConfig positionEventReceiverConfig;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+
+        // Set default property values
+        ReflectionTestUtils.setField(positionEventReceiverConfig, "userName", "testUser");
+        ReflectionTestUtils.setField(positionEventReceiverConfig, "password", "testPassword");
+        ReflectionTestUtils.setField(positionEventReceiverConfig, "host", "tcp://localhost:55555");
+        ReflectionTestUtils.setField(positionEventReceiverConfig, "jndiName", "testJndi");
+        ReflectionTestUtils.setField(positionEventReceiverConfig, "contextFactory", "testContextFactory");
+        ReflectionTestUtils.setField(positionEventReceiverConfig, "namingPrincipal", "testPrincipal");
+        ReflectionTestUtils.setField(positionEventReceiverConfig, "positionEventListnerQueue", "testQueue");
+        ReflectionTestUtils.setField(positionEventReceiverConfig, "infraName", "testInfra");
+        ReflectionTestUtils.setField(positionEventReceiverConfig, "assetClass", "testAsset");
+        ReflectionTestUtils.setField(positionEventReceiverConfig, "instanceCount", 1);
+        ReflectionTestUtils.setField(positionEventReceiverConfig, "onCloud", false);
+        ReflectionTestUtils.setField(positionEventReceiverConfig, "env", "local");
+        ReflectionTestUtils.setField(positionEventReceiverConfig, "hostName", "localhost");
+    }
+
+    @Test
+    void testLoadCloudConfig_ApplicationRunningOnCloud() throws Exception {
+        // Mock applicationRunningOnCloud method
+        ReflectionTestUtils.setField(positionEventReceiverConfig, "onCloud", true);
+
+        InetAddress localHost = mock(InetAddress.class);
+        when(localHost.getHostName()).thenReturn("cloud-host");
+        ReflectionTestUtils.setField(positionEventReceiverConfig, "hostName", "cloud-host");
+
+        // Invoke method under test
+        positionEventReceiverConfig.loadCloudConfig();
+
+        // Assertions
+        assertEquals("cloud-host", ReflectionTestUtils.getField(positionEventReceiverConfig, "hostName"));
+        assertTrue((boolean) ReflectionTestUtils.getField(positionEventReceiverConfig, "onCloud"));
+    }
+
+    @Test
+    void testLoadCloudConfig_ApplicationNotRunningOnCloud() {
+        // Mock applicationRunningOnCloud method
+        ReflectionTestUtils.setField(positionEventReceiverConfig, "onCloud", false);
+
+        // Invoke method under test
+        positionEventReceiverConfig.loadCloudConfig();
+
+        // Assertions
+        assertEquals("local", ReflectionTestUtils.getField(positionEventReceiverConfig, "env"));
+        assertFalse((boolean) ReflectionTestUtils.getField(positionEventReceiverConfig, "onCloud"));
+    }
+
+    @Test
+    void testApplicationRunningOnCloud_CloudProfileActive() {
+        // Mock active profiles
+        when(environment.getActiveProfiles()).thenReturn(new String[]{"cloud"});
+
+        // Invoke method under test
+        boolean result = positionEventReceiverConfig.applicationRunningOnCloud();
+
+        // Assertions
+        assertTrue(result);
+        assertTrue((boolean) ReflectionTestUtils.getField(positionEventReceiverConfig, "onCloud"));
+    }
+
+    @Test
+    void testApplicationRunningOnCloud_LocalProfileActive() {
+        // Mock active profiles
+        when(environment.getActiveProfiles()).thenReturn(new String[]{"local"});
+
+        // Invoke method under test
+        boolean result = positionEventReceiverConfig.applicationRunningOnCloud();
+
+        // Assertions
+        assertFalse(result);
+        assertEquals("local", ReflectionTestUtils.getField(positionEventReceiverConfig, "env"));
+    }
+
+    @Test
+    void testApplicationRunningOnCloud_NoActiveProfiles() {
+        // Mock active profiles
+        when(environment.getActiveProfiles()).thenReturn(new String[]{});
+
+        // Invoke method under test
+        boolean result = positionEventReceiverConfig.applicationRunningOnCloud();
+
+        // Assertions
+        assertFalse(result);
+        assertEquals("local", ReflectionTestUtils.getField(positionEventReceiverConfig, "env"));
+    }
+}
