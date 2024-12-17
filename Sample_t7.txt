@@ -1,0 +1,85 @@
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+public class YourClassTest {
+
+    private YourClass yourClass;
+
+    @BeforeEach
+    public void setUp() {
+        yourClass = new YourClass();
+    }
+
+    @Test
+    public void testGetTdsSolaceHost() {
+        String expected = "tdsSolaceHostValue"; // replace with expected value
+        assertEquals(expected, yourClass.getTdsSolaceHost());
+    }
+
+    @Test
+    public void testGetTdsVpn() {
+        String expected = "tdsVpnValue"; // replace with expected value
+        assertEquals(expected, yourClass.getTdsVpn());
+    }
+
+    @Test
+    public void testGetTdsSolaceUser() {
+        String expected = "tdsSolaceUserValue"; // replace with expected value
+        assertEquals(expected, yourClass.getTdsSolaceUser());
+    }
+
+    @Test
+    public void testGetTdsSolacePassword() {
+        String expected = "tdsSolacePasswordValue"; // replace with expected value
+        assertEquals(expected, yourClass.getTdsSolacePassword());
+    }
+
+    @Test
+    public void testGetTdsReconSolaceHost() {
+        String expected = "tdsReconSolaceHostValue"; // replace with expected value
+        assertEquals(expected, yourClass.getTdsReconSolaceHost());
+    }
+
+    @Test
+    public void testGetTdsReconSolaceVpn() {
+        String expected = "tdsReconSolaceVpnValue"; // replace with expected value
+        assertEquals(expected, yourClass.getTdsReconSolaceVpn());
+    }
+
+    @Test
+    public void testGetTdsReconSolaceUser() {
+        String expected = "tdsReconSolaceUserValue"; // replace with expected value
+        assertEquals(expected, yourClass.getTdsReconSolaceUser());
+    }
+
+    @Test
+    public void testGetTdsReconSolacePassword() {
+        String expected = "tdsReconSolacePasswordValue"; // replace with expected value
+        assertEquals(expected, yourClass.getTdsReconSolacePassword());
+    }
+
+    @Test
+    public void testGetInfraName() {
+        String expected = "infraNameValue"; // replace with expected value
+        assertEquals(expected, yourClass.getInfraName());
+    }
+
+    @Test
+    public void testGetHostName() {
+        String expected = "hostNameValue"; // replace with expected value
+        assertEquals(expected, yourClass.getHostName());
+    }
+
+    @Test
+    public void testGetAssetClass() {
+        String expected = "assetClassValue"; // replace with expected value
+        assertEquals(expected, yourClass.getAssetClass());
+    }
+
+    @Test
+    public void testGetInstanceId() {
+        int expected = 123; // replace with expected value
+        assertEquals(expected, yourClass.getInstanceId());
+    }
+}
