@@ -1,0 +1,115 @@
+package com.wellsfargo.cat.position.streaming.config;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.core.env.Environment;
+
+import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+class PositionEventReceiverConfigTest {
+
+    @Mock
+    private Environment environment;
+
+    @InjectMocks
+    private PositionEventReceiverConfig positionEventReceiverConfig;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+
+        // Mock necessary environment variables or values
+        when(environment.getActiveProfiles()).thenReturn(new String[]{"local"});
+    }
+
+    @Test
+    void testApplicationRunningOnCloud_WithCloudProfile() {
+        // Mock active profiles to include "cloud"
+        when(environment.getActiveProfiles()).thenReturn(new String[]{"cloud"});
+
+        // Call the method
+        boolean isOnCloud = positionEventReceiverConfig.applicationRunningOnCloud();
+
+        // Verify the outcome
+        assertTrue(isOnCloud);
+    }
+
+    @Test
+    void testApplicationRunningOnCloud_WithLocalProfile() {
+        // Mock active profiles to include "local"
+        when(environment.getActiveProfiles()).thenReturn(new String[]{"local"});
+
+        // Call the method
+        boolean isOnCloud = positionEventReceiverConfig.applicationRunningOnCloud();
+
+        // Verify the outcome
+        assertFalse(isOnCloud);
+    }
+
+    @Test
+    void testApplicationRunningOnCloud_NoProfiles() {
+        // Mock active profiles as null
+        when(environment.getActiveProfiles()).thenReturn(null);
+
+        // Call the method
+        boolean isOnCloud = positionEventReceiverConfig.applicationRunningOnCloud();
+
+        // Verify the outcome
+        assertFalse(isOnCloud);
+    }
+
+    @Test
+    void testApplicationRunningOnCloud_EmptyProfiles() {
+        // Mock active profiles as an empty array
+        when(environment.getActiveProfiles()).thenReturn(new String[]{});
+
+        // Call the method
+        boolean isOnCloud = positionEventReceiverConfig.applicationRunningOnCloud();
+
+        // Verify the outcome
+        assertFalse(isOnCloud);
+    }
+
+    @Test
+    void testLoadCloudConfig_ApplicationRunningOnCloud() throws Exception {
+        // Mock active profiles to include "cloud"
+        when(environment.getActiveProfiles()).thenReturn(new String[]{"cloud"});
+
+        // Call the method
+        positionEventReceiverConfig.loadCloudConfig();
+
+        // Assert that hostname and instanceId were set
+        assertNotNull(positionEventReceiverConfig.hostName);
+        assertTrue(positionEventReceiverConfig.onCloud);
+    }
+
+    @Test
+    void testLoadCloudConfig_ApplicationNotRunningOnCloud() {
+        // Mock active profiles to include "local"
+        when(environment.getActiveProfiles()).thenReturn(new String[]{"local"});
+
+        // Call the method
+        positionEventReceiverConfig.loadCloudConfig();
+
+        // Assert that the environment is local
+        assertEquals("local", positionEventReceiverConfig.env);
+        assertFalse(positionEventReceiverConfig.onCloud);
+    }
+
+    @Test
+    void testLoadCloudConfig_ExceptionScenario() {
+        // Mock an exception when calling getActiveProfiles()
+        when(environment.getActiveProfiles()).thenThrow(new RuntimeException("Mocked exception"));
+
+        // Call the method
+        positionEventReceiverConfig.loadCloudConfig();
+
+        // Verify no crash occurred and default values are retained
+        assertEquals("local", positionEventReceiverConfig.env);
+        assertFalse(positionEventReceiverConfig.onCloud);
+    }
+}
