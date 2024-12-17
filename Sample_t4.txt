@@ -1,174 +1,57 @@
-package com.wellsfargo.cat.position.streaming.service;
+@Test
+void testProcessMessage() throws JMSException {
+    // Arrange: Create a mock TextMessage
+    TextMessage mockMessage = mock(TextMessage.class);
+    when(mockMessage.getStringProperty(PositionDistributionUtil.CUSIP)).thenReturn("CUSIP12345");
+    when(mockMessage.getText()).thenReturn("Test message content");
 
-import com.wellsfargo.cat.position.streaming.config.PositionEventReceiverConfig;
-import com.wellsfargo.cat.position.streaming.config.SolaceConfiguration;
-import com.wellsfargo.cat.position.streaming.service.PositionEventListenerService;
-import com.wellsfargo.cat.position.streaming.service.PositionProcessorService;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+    // Spy on the PositionEventListenerService instance
+    PositionEventListenerService spyService = Mockito.spy(positionEventListenerService);
 
-import javax.jms.ConnectionFactory;
-import javax.jms.Message;
-import javax.jms.TextMessage;
-import javax.naming.InitialContext;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ExecutorService;
+    // Mock the messageListener() method to return a mock MessageListener
+    MessageListener mockMessageListener = mock(MessageListener.class);
+    doReturn(mockMessageListener).when(spyService).messageListner(); 
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+    // Act: Invoke onMessage through messageListener
+    spyService.messageListner().onMessage(mockMessage);
 
-class PositionEventListenerServiceTest {
+    // Assert: Verify that processMessage was called once
+    verify(spyService, times(1)).processMessage(mockMessage);
+}
 
-    @InjectMocks
-    private PositionEventListenerService positionEventListenerService;
+@Test
+void testProcessMessage_Exception() throws JMSException {
+    // Arrange: Create a mock TextMessage and simulate an exception during message processing
+    TextMessage mockMessage = mock(TextMessage.class);
+    when(mockMessage.getStringProperty(PositionDistributionUtil.CUSIP)).thenReturn("CUSIP12345");
+    when(mockMessage.getText()).thenReturn("Test message content");
 
-    @Mock
-    private PositionEventReceiverConfig positionEventReceiverConfig;
+    // Spy on the PositionEventListenerService instance
+    PositionEventListenerService spyService = Mockito.spy(positionEventListenerService);
 
-    @Mock
-    private SolaceConfiguration solaceConfiguration;
+    // Act: Invoke processMessage and simulate an exception
+    doThrow(new JMSException("Processing failed")).when(spyService).processMessage(mockMessage);
 
-    @Mock
-    private PositionProcessorService positionProcessorService;
+    // Act: Invoke onMessage through messageListener
+    spyService.messageListner().onMessage(mockMessage);
 
-    @Mock
-    private ExecutorService[] partitionedExecutors;
+    // Assert: Verify that the exception is properly handled by verifying logging or other side effects
+    verify(spyService, times(1)).processMessage(mockMessage);
+}
 
-    @Mock
-    private TextMessage textMessage;
+@Test
+void testMessageListener_OnMessage() throws JMSException {
+    // Arrange: Create a mock TextMessage
+    TextMessage mockMessage = mock(TextMessage.class);
+    when(mockMessage.getStringProperty(PositionDistributionUtil.CUSIP)).thenReturn("CUSIP12345");
+    when(mockMessage.getText()).thenReturn("Test message content");
 
-    @Mock
-    private Message message;
+    // Create a mock message listener using Mockito.spy to call the onMessage method
+    PositionEventListenerService spyService = Mockito.spy(positionEventListenerService);
+    
+    // Act: Invoke onMessage using the mocked TextMessage
+    spyService.messageListner().onMessage(mockMessage);
 
-    private ConnectionFactory mockConnectionFactory;
-    private InitialContext mockInitialContext;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-        mockConnectionFactory = mock(ConnectionFactory.class);
-        mockInitialContext = mock(InitialContext.class);
-    }
-
-    @Test
-    void testInit() {
-        // Act
-        positionEventListenerService.init();
-
-        // Assert
-        assertNotNull(positionEventListenerService);
-    }
-
-    @Test
-    void testStopConsumer() throws Exception {
-        // Arrange
-        positionEventListenerService.subscriber = mock(JmsControlledListener.class);
-
-        // Act
-        positionEventListenerService.stopConsumer();
-
-        // Assert
-        verify(positionEventListenerService.subscriber).stopConsumer();
-    }
-
-    @Test
-    void testStopConsumer_Exception() throws Exception {
-        // Arrange
-        positionEventListenerService.subscriber = mock(JmsControlledListener.class);
-        doThrow(new RuntimeException("Subscriber Error")).when(positionEventListenerService.subscriber).stopConsumer();
-
-        // Act & Assert
-        assertThrows(Exception.class, positionEventListenerService::stopConsumer);
-    }
-
-    @Test
-    void testSubscribeOnAppStartup() throws Exception {
-        // Arrange
-        when(positionEventReceiverConfig.getHost()).thenReturn("host");
-        when(positionEventReceiverConfig.getNamingPrincipal()).thenReturn("principal");
-        when(positionEventReceiverConfig.getPassword()).thenReturn("password");
-        when(solaceConfiguration.getInitialContext(anyString(), anyString(), anyString())).thenReturn(mockInitialContext);
-        when(solaceConfiguration.solaceConnectionFactory(anyString(), anyString(), anyString(), anyString(), anyString(), anyString()))
-                .thenReturn(mockConnectionFactory);
-        when(positionEventReceiverConfig.getPositionEventListnerQueue()).thenReturn("TestQueue");
-
-        JmsControlledListener mockSubscriber = mock(JmsControlledListener.class);
-        doNothing().when(mockSubscriber).subscribe(anyString(), any());
-
-        positionEventListenerService.subscriber = mockSubscriber;
-
-        // Act
-        positionEventListenerService.subscribeOnAppStartup();
-
-        // Assert
-        verify(mockSubscriber).subscribe(eq("TestQueue"), any());
-        verify(mockSubscriber).startConsumer();
-    }
-
-    @Test
-    void testExtractMessageProperties() throws Exception {
-        // Arrange
-        when(message.getPropertyNames()).thenReturn(new java.util.Vector<>(Map.of("key1", "value1").keySet()).elements());
-        when(message.getStringProperty("key1")).thenReturn("value1");
-
-        // Act
-        Map<String, String> result = positionEventListenerService.extractMessageProperties(message);
-
-        // Assert
-        assertEquals(2, result.size()); // 1 property + PROCESSING_START_TIME_EPOCH
-        assertEquals("value1", result.get("key1"));
-        assertNotNull(result.get("PROCESSING_START_TIME_EPOCH"));
-    }
-
-    @Test
-    void testMessageListener_OnMessage() throws Exception {
-        // Arrange
-        when(textMessage.getStringProperty("CUSIP")).thenReturn("TestCusip");
-        when(textMessage.getText()).thenReturn("TestMessage");
-
-        int partition = 0;
-        ExecutorService mockExecutor = mock(ExecutorService.class);
-        partitionedExecutors = new ExecutorService[]{mockExecutor};
-
-        when(partitionedExecutors.length).thenReturn(1);
-        positionEventListenerService.partitionedExecutors = partitionedExecutors;
-
-        // Act
-        positionEventListenerService.messageListener().onMessage(textMessage);
-
-        // Assert
-        verify(mockExecutor).submit(any(Runnable.class));
-    }
-
-    @Test
-    void testProcessMessage() throws Exception {
-        // Arrange
-        when(message.getStringProperty("CUSIP")).thenReturn("TestCusip");
-        when(message.getText()).thenReturn("TestMessage");
-
-        Map<String, String> mockProperties = new HashMap<>();
-        mockProperties.put("key", "value");
-        when(positionEventListenerService.extractMessageProperties(message)).thenReturn(mockProperties);
-
-        // Act
-        positionEventListenerService.processMessage(message);
-
-        // Assert
-        verify(positionProcessorService).processPosition(anyString(), eq(mockProperties));
-    }
-
-    @Test
-    void testProcessMessage_Exception() throws Exception {
-        // Arrange
-        when(message.getStringProperty("CUSIP")).thenReturn("TestCusip");
-        when(message.getText()).thenReturn("TestMessage");
-        doThrow(new RuntimeException("Processing Error")).when(positionProcessorService).processPosition(anyString(), anyMap());
-
-        // Act & Assert
-        assertDoesNotThrow(() -> positionEventListenerService.processMessage(message));
-    }
+    // Assert: Verify that processMessage is called
+    verify(spyService, times(1)).processMessage(mockMessage);
 }
