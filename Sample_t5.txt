@@ -1,0 +1,112 @@
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.*;
+import javax.jms.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
+import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+class PositionEventListenerServiceTest {
+
+    @Mock
+    private ExecutorService[] partitionedExecutors; // Mock the partitioned executors
+
+    @Mock
+    private Message message; // Mock the generic message
+
+    @Mock
+    private TextMessage textMessage; // Mock TextMessage
+
+    @Mock
+    private PositionEventListenerService positionEventListenerService; // Mock the service
+
+    @InjectMocks
+    private PositionEventListenerService positionEventListenerServiceSpy; // Spy on the service to test behavior
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    void testMessageListener_OnMessage() throws JMSException {
+        // Arrange: Mock the behavior of the message
+        when(message instanceof TextMessage).thenReturn(true);
+        when(textMessage.getStringProperty(PositionDistributionUtil.CUSIP)).thenReturn("CUSIP12345");
+        when(textMessage.getText()).thenReturn("Test message content");
+
+        // Mock partitionedExecutors to simulate the task submission
+        Executor mockExecutor = mock(Executor.class);
+        when(partitionedExecutors[0]).thenReturn(mockExecutor); // Mock the first partitioned executor
+
+        // Spy on the PositionEventListenerService to verify the call to processMessage
+        PositionEventListenerService messageListenerService = new PositionEventListenerService();
+        messageListenerService.partitionedExecutors = partitionedExecutors; // Inject mock partitionedExecutors
+
+        // Act: Call the messagelistner() method to get the MessageListener and invoke onMessage()
+        MessageListener messageListener = messageListenerService.messagelistner();
+        messageListener.onMessage(textMessage);
+
+        // Assert: Verify that the message is processed
+        verify(partitionedExecutors[0], times(1)).submit(any(Runnable.class)); // Verify task submission to executor
+
+        // Verify that processMessage() is invoked
+        verify(positionEventListenerServiceSpy, times(1)).processMessage(textMessage);
+
+        // Verify message acknowledgment
+        verify(textMessage, times(1)).acknowledge();
+    }
+
+    @Test
+    void testMessageListener_OnMessage_ExceptionHandling() throws JMSException {
+        // Arrange: Mock the behavior of the message
+        when(message instanceof TextMessage).thenReturn(true);
+        when(textMessage.getStringProperty(PositionDistributionUtil.CUSIP)).thenReturn("CUSIP12345");
+
+        // Simulate processMessage throwing an exception
+        doThrow(new JMSException("Processing failed")).when(positionEventListenerServiceSpy).processMessage(textMessage);
+
+        // Mock partitionedExecutors to simulate the task submission
+        Executor mockExecutor = mock(Executor.class);
+        when(partitionedExecutors[0]).thenReturn(mockExecutor); // Mock the first partitioned executor
+
+        // Act: Call the messagelistner() method to get the MessageListener and invoke onMessage()
+        MessageListener messageListener = positionEventListenerServiceSpy.messagelistner();
+        messageListener.onMessage(textMessage);
+
+        // Assert: Verify that an exception is caught and logged
+        verify(positionEventListenerServiceSpy, times(1)).processMessage(textMessage);
+        verify(textMessage, times(1)).acknowledge();
+
+        // Check that the error logging happens for JMSException
+        verify(positionEventListenerServiceSpy.LOGGER, times(1))
+                .error(eq("Error (JMSException-IN) in onMessage"), any());
+    }
+
+    @Test
+    void testMessageListener_OnMessage_UnknownExceptionHandling() throws JMSException {
+        // Arrange: Mock the behavior of the message
+        when(message instanceof TextMessage).thenReturn(true);
+        when(textMessage.getStringProperty(PositionDistributionUtil.CUSIP)).thenReturn("CUSIP12345");
+
+        // Simulate processMessage throwing an unknown exception
+        doThrow(new Exception("Unknown error")).when(positionEventListenerServiceSpy).processMessage(textMessage);
+
+        // Mock partitionedExecutors to simulate the task submission
+        Executor mockExecutor = mock(Executor.class);
+        when(partitionedExecutors[0]).thenReturn(mockExecutor); // Mock the first partitioned executor
+
+        // Act: Call the messagelistner() method to get the MessageListener and invoke onMessage()
+        MessageListener messageListener = positionEventListenerServiceSpy.messagelistner();
+        messageListener.onMessage(textMessage);
+
+        // Assert: Verify that the exception is caught and logged
+        verify(positionEventListenerServiceSpy, times(1)).processMessage(textMessage);
+        verify(textMessage, times(1)).acknowledge();
+
+        // Check that the error logging happens for general Exception
+        verify(positionEventListenerServiceSpy.LOGGER, times(1))
+                .error(eq("Error (Exception-OUT) in onMessage()"), any());
+    }
+}
