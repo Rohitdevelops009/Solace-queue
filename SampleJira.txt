@@ -1,0 +1,88 @@
+Jira Ticket: FINRA TRACE Securitized Products Re-platform and Data Feed Protocol Changes
+
+Summary:
+Prepare for FINRA TRACE Securitized Products Re-platform and Data Feed Protocol Changes by updating system configurations, testing FIX tags, and adopting MOLD/UDP 64 protocol as per FINRA's specifications.
+
+Description:
+As part of the FINRA Transparency Services improvement initiative, FINRA is re-platforming TRACE Securitized Products to a Linux-based system, introducing new protocols and specifications for data feeds, effective May 19, 2025.
+
+This Jira ticket outlines the required updates and tasks to ensure compliance and readiness:
+
+• Trade Reporting:
+
+• Test all FIX tags for TRACE Securitized Products to ensure proper processing.
+
+• Data Feed Protocol Updates:
+
+• Adopt the new MOLD/UDP 64 protocol for SPDS/SPDS-144A data feeds.
+
+• Automate retransmission requests via dedicated unicast addresses, replacing manual retransmissions.
+
+• Message Header and Data Content Changes:
+
+• Update the message header format to 24 bytes.
+
+• Modify message header fields: 
+
+• Remove "Session Identifier" and "Retransmission Requester" fields.
+
+• Include "Message Sequence Number" in the MOLD/UDP 64 protocol layer.
+
+• Rename "Message Sequence Number" to "Trade Identifier" (7 bytes).
+
+• Control Messages:
+
+• Integrate Line Integrity, Sequence Number Reset, and End of Retransmission messages into the MOLD/UDP 64 protocol layer.
+
+• Update dissemination frequency for Start/End of Day and End of Trade Reporting messages to once per session.
+
+• Data Messages:
+
+• Rename "Original Message Sequence Number" to "Original Trade Identifier" in Cancel and Correction messages.
+
+• Implement transitional handling for trades prior to the new system's implementation during the T+20 period.
+
+• Network Communications Changes:
+
+• Configure new SPDS/SPDS-144A ports and multicast addresses.
+
+• Set up Primary A, Primary B, and Disaster Recovery groups for NY Metro and Ashburn regions.
+
+• Testing Requirements:
+
+• Participate in FINRA's testing period (schedule to be provided by FINRA).
+
+• Ensure readiness by accommodating all data feed changes before May 19, 2025.
+
+Acceptance Criteria:
+
+• All FIX tags are tested and validated.
+
+• MOLD/UDP 64 protocol is successfully implemented and operational.
+
+• Message headers, data messages, and control messages comply with updated specifications.
+
+• Network configurations, including Disaster Recovery, are set up and verified.
+
+• Successful participation in FINRA's formal testing period.
+
+Attachments:
+
+• [SPDS/SPDS-144A Specifications]
+
+• [MOLD/UDP 64 Protocol Documentation]
+
+• [Updated Network Configuration Details]
+
+Contact Points:
+
+• For protocol-related questions: Trading Services at 212.231.5180.
+
+• For network assistance: customer-netops@nasdaq.com.
+
+• For testing inquiries: FINRA Client and System Management.
+
+Priority: High
+Target Completion Date: April 30, 2025 (prior to the May 19, 2025, deadline).
+
+Tags: FINRA, TRACE, Data Feed, Protocol Update, MOLD/UDP 64.
