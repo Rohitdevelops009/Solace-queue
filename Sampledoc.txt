@@ -1,0 +1,345 @@
+Implementation Checklist: Transition to New FINRA TRACE Configuration
+
+1. Infrastructure and Environment Changes
+
+• Operating System:
+
+• Transition backend systems to a Linux-based environment for compatibility with the new FINRA platform.
+
+• Validate hardware and software dependencies.
+
+• Network Configuration:
+
+• Update IP addresses for SPDS and SPDS-144A feeds.
+
+• Configure multicast addresses and unicast retransmission addresses as per new specifications.
+
+• Validate firewall and security rules for the new ports and addresses.
+
+• Configure disaster recovery groups for data feed redundancy.
+
+2. Protocol and Message Updates
+
+• Adopt MOLD/UDP 64 Protocol:
+
+• Replace existing non-interactive simplex mode with MOLD/UDP 64 for data communication.
+
+• Implement automated retransmission handling using dedicated unicast addresses.
+
+• Control Messages:
+
+• Transition the following control messages to the MOLD/UDP 64 protocol layer: 
+
+• Line Integrity
+
+• Sequence Number Reset
+
+• End of Retransmission
+
+• Adjust processing to handle single dissemination of: 
+
+• Start of Day
+
+• End of Day
+
+• End of Trade Reporting
+
+3. FIX Specification Updates
+
+• Message Header:
+
+• Reduce header size to 24 bytes.
+
+• Remove: 
+
+• Session Identifier
+
+• Retransmission Requester
+
+• Incorporate the Message Sequence Number into the protocol layer.
+
+• Rename Message Sequence Number → Trade Identifier (7 bytes, unique per session).
+
+• Data Fields:
+
+• Rename Original Message Sequence Number → Original Trade Identifier.
+
+• During T+20 transitional period, ensure the Original Trade Identifier maps correctly to old sequence numbers for historical trade cancelations and corrections.
+
+• Field Values:
+
+• Update Trade Capture Report tags for canceled and corrected trades to reflect the new naming conventions.
+
+• Adjust fields for data validation and error handling based on new formats.
+
+4. System Logic Updates
+
+• Data Processing:
+
+• Modify business logic for trade entries, cancels, and corrections to use the new Trade Identifier and Original Trade Identifier.
+
+• Validate that retransmissions are automated and align with MOLD/UDP 64 specifications.
+
+• Error Handling:
+
+• Enhance validation rules for the updated data structure (e.g., message headers, sequence handling).
+
+• Log and handle exceptions specific to retransmission failures or mismatched identifiers.
+
+• Testing Scenarios:
+
+• Test scenarios for T+20 period where old identifiers are still referenced.
+
+• Validate new error codes and scenarios outlined in the circular.
+
+5. Testing and Validation
+
+• Functional Testing:
+
+• Verify all FIX tags, especially those impacted by the new Trade Identifier.
+
+• Validate new control message flows with MOLD/UDP 64.
+
+• Test retransmission requests and responses for robustness.
+
+• Performance Testing:
+
+• Benchmark message processing with the new protocol to identify bottlenecks.
+
+• Simulate high-volume trades to test stability and performance.
+
+• Integration Testing:
+
+• Validate end-to-end integration with TRACE using the updated message format and protocol.
+
+• User Acceptance Testing (UAT):
+
+• Conduct extensive testing with sample data and in FINRA’s client testing environment.
+
+6. Documentation and Training
+
+• Update internal documentation with the new specifications, processes, and configurations.
+
+• Train development and operations teams on: 
+
+• MOLD/UDP 64 protocol usage.
+
+• FIX message changes.
+
+• New network configurations.
+
+Differences Between Current FIX and New UDP-Based Configuration:
+
+AspectCurrent FIX (v1.8)New UDP-Based ConfigurationProtocolFIX 4.4FIX 4.4 + MOLD/UDP 64Header Size26+ bytes24 bytesSession IdentifierPresent in headerMoved to MOLD/UDP 64 layerRetransmission RequesterPresent in headerMoved to MOLD/UDP 64 layerMessage Sequence NumberIn FIX headerRenamed Trade Identifier in MOLD/UDP 64 layerCancel/Correction MessagesUse Original Message Sequence NumberUse Original Trade IdentifierControl MessagesIncluded in FIX protocol messagesHandled by MOLD/UDP 64 layerRetransmissionsManual requests via FIXAutomated via unicast addressesNetwork ModeNon-interactive simplex over IPMOLD/UDP 64 multicast and unicast 
+
+System Logic Updates: Detailed Elaboration
+
+To align with the new FINRA TRACE requirements and MOLD/UDP 64 protocol, the system logic must be adapted in the following areas:
+
+1. Trade Data Processing
+
+• Header Updates:
+
+• Update the logic to handle a 24-byte message header.
+
+• Extract the Trade Identifier from the MOLD/UDP 64 layer instead of relying on the FIX Message Sequence Number.
+
+• Remove dependencies on Session Identifier and Retransmission Requester fields in the header, as these are now part of the protocol layer.
+
+• Trade Identifier Management:
+
+• Ensure the Trade Identifier is unique per session and aligns with the new 7-byte format.
+
+• During the T+20 transition period, implement mapping logic to reconcile old sequence numbers with the new Original Trade Identifier.
+
+• Validation:
+
+• Implement additional validation checks for new field lengths and naming conventions (e.g., Original Trade Identifier, Trade Identifier).
+
+• Validate that fields previously in the header (e.g., Message Sequence Number) are properly managed at the protocol layer.
+
+2. Retransmissions
+
+• Automated Retransmission Logic:
+
+• Replace the manual retransmission process with an automated mechanism using unicast addresses.
+
+• Implement logic to: 
+
+• Identify missing or corrupt data packets.
+
+• Automatically generate retransmission requests to the unicast address provided in the configuration.
+
+• Process retransmitted messages and integrate them seamlessly into the data stream.
+
+• Error Handling:
+
+• Add error handling for retransmission failures, such as timeout scenarios or repeated failures.
+
+• Log retransmission attempts and outcomes for debugging and auditing purposes.
+
+3. Control Message Handling
+
+• MOLD/UDP 64 Control Messages:
+
+• Adapt control message handling to align with the new protocol, specifically for: 
+
+• Line Integrity
+
+• Sequence Number Reset
+
+• End of Retransmission
+
+• Modify the logic to process these messages at the protocol layer instead of the FIX layer.
+
+• Message Dissemination Changes:
+
+• Adjust the logic for control message dissemination: 
+
+• Start of Day, End of Day, and End of Trade Reporting messages will now be disseminated once (instead of three times).
+
+• Ensure downstream systems can handle this change without errors.
+
+4. Cancel and Correction Logic
+
+• Field Renaming and Mapping:
+
+• Replace the use of Original Message Sequence Number with Original Trade Identifier in cancel and correction messages.
+
+• Implement a mapping layer during the T+20 transition period to interpret and process legacy sequence numbers.
+
+• Backward Compatibility:
+
+• Ensure that cancel and correction logic can differentiate between pre- and post-implementation trades.
+
+• Handle T+20 trades using old identifiers and apply the correct mapping for seamless processing.
+
+5. New Data Feed Protocol Integration
+
+• MOLD/UDP 64 Protocol:
+
+• Add support for handling MOLD/UDP 64 data packets, including: 
+
+• Parsing the new message structure.
+
+• Reassembling fragmented messages.
+
+• Implement sequence tracking at the protocol layer to detect and resolve any packet loss.
+
+• Network Failover Logic:
+
+• Update the system to process data from both Primary A and B feeds.
+
+• Add logic to switch to Disaster Recovery feeds during catastrophic failures.
+
+6. Logging and Monitoring Enhancements
+
+• Retransmission Logs:
+
+• Maintain detailed logs of retransmission requests, responses, and failures.
+
+• Include session-level identifiers in logs for better traceability.
+
+• Control Message Monitoring:
+
+• Monitor and log control messages to ensure integrity and proper sequence handling.
+
+• Trade Identifier Tracking:
+
+• Implement tracking for the Trade Identifier and Original Trade Identifier to ensure audit compliance.
+
+7. Testing Scenarios
+
+• Unit Testing:
+
+• Test each updated logic component, such as header parsing, retransmission handling, and field renaming.
+
+• Integration Testing:
+
+• Validate the integration of new protocol layers with existing trade reporting systems.
+
+• Simulate high-volume trading scenarios to test the reliability of retransmissions and sequence tracking.
+
+• Backward Compatibility Testing:
+
+• Test the system's ability to process legacy FIX messages during the T+20 period.
+
+By updating these aspects of system logic, the platform will fully comply with the new FINRA TRACE requirements and seamlessly handle the transition to the MOLD/UDP 64 protocol. Would you like detailed pseudocode or flow diagrams for any of these updates?
+Below is the pseudocode for implementing the key system logic updates for the new FINRA TRACE requirements.
+
+1. Message Header Parsing
+
+function parseMessageHeader(message): header = message.extractHeader() // Validate header length if header.length != 24: logError("Invalid header length") return INVALID_MESSAGE // Extract Trade Identifier (7 bytes) tradeIdentifier = header.getField("Trade Identifier") // Validate Trade Identifier if tradeIdentifier is NULL or tradeIdentifier.length != 7: logError("Invalid Trade Identifier") return INVALID_MESSAGE return SUCCESS 
+
+2. Retransmission Handling
+
+function handleRetransmission(packet, expectedSequenceNumber): sequenceNumber = packet.getSequenceNumber() if sequenceNumber == expectedSequenceNumber: processPacket(packet) incrementSequenceNumber() else if sequenceNumber > expectedSequenceNumber: logWarning("Packet skipped. Sending retransmission request.") sendRetransmissionRequest(expectedSequenceNumber, sequenceNumber - 1) else: logWarning("Duplicate packet received. Ignoring.") function sendRetransmissionRequest(startSeq, endSeq): retransmissionRequest = createRetransmissionRequest(startSeq, endSeq) sendToUnicastAddress(retransmissionRequest) logInfo(f"Retransmission requested for packets {startSeq} to {endSeq}") 
+
+3. Control Message Processing
+
+function processControlMessage(controlMessage): type = controlMessage.getType() if type == "Line Integrity": validateLineIntegrity(controlMessage) else if type == "Sequence Number Reset": resetSequenceNumber(controlMessage.getNewSequenceNumber()) else if type == "End of Retransmission": logInfo("End of retransmission received") else: logError("Unknown control message type") 
+
+4. Cancel and Correction Logic
+
+function handleCancelMessage(message): originalTradeID = message.getField("Original Trade Identifier") if originalTradeID is NULL: logError("Original Trade Identifier missing in cancel message") return ERROR trade = fetchTradeByTradeID(originalTradeID) if trade is NULL: logError("Trade not found for cancellation") return ERROR markTradeAsCancelled(trade) logInfo(f"Trade {originalTradeID} successfully cancelled") return SUCCESS function handleCorrectionMessage(message): originalTradeID = message.getField("Original Trade Identifier") newTradeData = message.getTradeData() if originalTradeID is NULL: logError("Original Trade Identifier missing in correction message") return ERROR trade = fetchTradeByTradeID(originalTradeID) if trade is NULL: logError("Trade not found for correction") return ERROR // Apply corrections updatedTrade = updateTradeData(trade, newTradeData) logInfo(f"Trade {originalTradeID} successfully corrected") return SUCCESS 
+
+5. Message Dissemination
+
+function disseminateControlMessages(): // Disseminate Start of Day message sendControlMessage("Start of Day") logInfo("Start of Day message disseminated") // At the end of the day sendControlMessage("End of Day") logInfo("End of Day message disseminated") 
+
+6. Backward Compatibility during T+20 Transition
+
+function mapLegacyToNewIdentifier(legacySequenceNumber): // Map legacy sequence number to new Trade Identifier newIdentifier = legacyMapping.get(legacySequenceNumber) if newIdentifier is NULL: logError("No mapping found for legacy sequence number") return ERROR return newIdentifier 
+
+7. Testing Scenarios
+
+Example: Unit Test for Retransmission Logic
+
+function testRetransmissionHandling(): expectedSequence = 101 receivedPacket = createPacketWithSequence(102) handleRetransmission(receivedPacket, expectedSequence) assert(logContains("Retransmission requested for packets 101 to 101")) 
+
+Example: Integration Test for Cancel Logic
+
+function testCancelMessageProcessing(): tradeID = "ABC1234" createTrade(tradeID) cancelMessage = createCancelMessage(tradeID) result = handleCancelMessage(cancelMessage) assert(result == SUCCESS) assert(tradeStatus(tradeID) == "Cancelled") 
+
+These pseudocode implementations focus on modularity, error handling, and compliance with the MOLD/UDP 64 and new FIX specifications. Let me know if you'd like further details or flowcharts!
+Here is the list of changes and their corresponding page numbers from the uploaded PDF (SP FIX Specification v1.8):
+
+Changes Identified in Current FIX Specification
+
+• Header Changes:
+
+• Standard Header requirements: Page 8, Section 3.13.1 (Inbound Header) and Section 3.13.2 (Outbound Header).
+
+• Fields to remove: 
+
+• Session Identifier and Retransmission Requester: These fields are part of the header description.
+
+• Trade Identifier Updates:
+
+• Description of TradeReportID (Tag 571), Original Message Sequence Number, and TradeReportTransType: Page 20, Section 5.1.1.
+
+• Cancel and Correction Logic:
+
+• Trade cancel specifics: Page 24, Section 5.1.2.
+
+• Trade correction specifics: Page 30, Section 5.1.4.
+
+• Control Messages:
+
+• Handling of messages like Line Integrity, Sequence Number Reset, and End of Retransmission: Page 8, Section 3.13.1 and 3.13.2.
+
+• Control message descriptions for Start/End of Day, Trade Reporting, and End of Transmissions: Page 18, Section 4.7.1.
+
+• Retransmission Handling:
+
+• Description of retransmission in FIX: Page 11, Section 3.15.7 (Resend Request).
+
+• Data Fields:
+
+• Description of Original Trade Identifier, Trade Identifier, and field renaming: Page 13, Section 4.5 (Identifiers).
+
+• Network Communication:
+
+• General network communication details, which need updating for MOLD/UDP 64: Page 7, Section 3.3 (Logon and Authentication).
+
+If you need exact excerpts or detailed mapping of the circular to the PDF, let me know!
