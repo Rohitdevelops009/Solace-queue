@@ -1,0 +1,43 @@
+To run a POC sample program on OpenShift, follow these steps:
+
+1. Set Up OpenShift CLI
+
+• Install the OpenShift CLI (oc) from the official OpenShift CLI download page.
+
+• Authenticate to your OpenShift cluster: oc login --token=<token> --server=<server_url> 
+
+2. Create a New Project
+
+• Create a new project (namespace) to organize your POC: oc new-project my-poc-project 
+
+3. Prepare Your Application
+
+• Create a simple application (e.g., Spring Boot, Node.js, Python).
+
+• Ensure your app has a Dockerfile for containerization. Example for a Node.js app: FROM node:16 WORKDIR /app COPY package*.json ./ RUN npm install COPY . . CMD ["npm", "start"] 
+
+4. Build the Application
+
+• Use OpenShift’s build mechanism to create an image: oc new-build --binary --name=my-poc-app 
+
+• Push the code to OpenShift: oc start-build my-poc-app --from-dir=. --follow 
+
+5. Deploy the Application
+
+• Deploy the built image: oc new-app my-poc-app 
+
+• Expose it to make it accessible: oc expose svc/my-poc-app 
+
+6. Access Your Application
+
+• Retrieve the URL to access the app: oc get route 
+
+• Open the URL in your browser.
+
+7. Monitor and Debug
+
+• View logs: oc logs -f <pod-name> 
+
+• Check the application status: oc get all 
+
+Would you like guidance on integrating OpenShift-specific features, such as ConfigMaps or Secrets?
