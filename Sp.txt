@@ -1,0 +1,48 @@
+import requests
+import time
+import json
+
+# Splunk API details
+SPLUNK_HOST = "https://your-splunk-instance:8089"
+USERNAME = "your_username"
+PASSWORD = "your_password"  # Use API token for better security
+SEARCH_QUERY = "search index=my_index sourcetype=my_sourcetype | head 100"
+OUTPUT_FILE = "splunk_data.json"
+
+# Splunk API endpoint for searching
+SEARCH_ENDPOINT = f"{SPLUNK_HOST}/services/search/jobs"
+
+def fetch_splunk_data():
+    # Step 1: Start the search job
+    response = requests.post(
+        SEARCH_ENDPOINT,
+        auth=(USERNAME, PASSWORD),
+        data={"search": SEARCH_QUERY, "exec_mode": "blocking"},
+        verify=False  # Set to True if using a valid SSL certificate
+    )
+
+    if response.status_code != 201:
+        print("Error starting search:", response.text)
+        return
+
+    job_id = response.json()["sid"]  # Search job ID
+
+    # Step 2: Get search results
+    results_url = f"{SPLUNK_HOST}/services/search/jobs/{job_id}/results"
+    response = requests.get(results_url, auth=(USERNAME, PASSWORD), verify=False)
+
+    if response.status_code == 200:
+        results = response.json()
+        
+        # Save data to a JSON file
+        with open(OUTPUT_FILE, "w") as f:
+            json.dump(results, f, indent=4)
+        
+        print("Data saved successfully!")
+    else:
+        print("Error fetching results:", response.text)
+
+# Run periodically (every 5 minutes in this example)
+while True:
+    fetch_splunk_data()
+    time.sleep(300)  # Wait 5 minutes before the next run

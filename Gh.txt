@@ -1,0 +1,75 @@
+To automate sending a prompt to GitHub Copilot in VS Code, follow these steps:
+
+Approach: Using a VS Code Extension & Macro
+
+We'll use VS Code Tasks + Macros Extension to automatically send prompts to Copilot.
+
+Step 1: Install Required Extensions
+
+• Install Macros Extension in VS Code: 
+
+• Open VS Code
+
+• Press Ctrl + Shift + X
+
+• Search for "VS Code Macros" by "geddski" or a similar extension
+
+• Click Install
+
+• Install Tasks Extension (Optional): 
+
+• If you want to schedule execution, install "VS Code Task Scheduler".
+
+Step 2: Record a Macro to Send a Prompt to Copilot
+
+• Open Command Palette (Ctrl + Shift + P).
+
+• Search for "Start Recording a Macro" and select it.
+
+• Perform these actions: 
+
+• Open Copilot Chat (Ctrl + I or Cmd + I for Mac).
+
+• Type your prompt (e.g., "Write a Python function to reverse a string").
+
+• Press Enter to send the prompt.
+
+• Open Command Palette again and select "Stop Recording a Macro".
+
+• Save the macro as "copilotPrompt".
+
+Step 3: Add Macro to keybindings.json
+
+• Open Command Palette (Ctrl + Shift + P).
+
+• Search for "Preferences: Open Keyboard Shortcuts (JSON)" and open keybindings.json.
+
+• Add this entry: { "key": "ctrl+alt+c", // Set your custom shortcut "command": "macros.copilotPrompt" } 
+
+• Save and close.
+
+Step 4: Automate the Macro Execution
+
+Option 1: Use a VS Code Task
+
+• Create a .vscode/tasks.json file in your project.
+
+• Add the following task: { "version": "2.0.0", "tasks": [ { "label": "Run Copilot Prompt", "command": "code", "args": ["-r", "-g", "macros.copilotPrompt"], "problemMatcher": [], "group": { "kind": "build", "isDefault": true } } ] } 
+
+• Open Terminal and run: code . && code --task "Run Copilot Prompt" 
+
+Option 2: Schedule Execution (Auto Run Every 5 Minutes)
+
+• If you're on Windows, use Task Scheduler: 
+
+• Open Task Scheduler → Create a new task.
+
+• Set trigger to repeat every 5 minutes.
+
+• In Action, select "Start a Program" and set: code --task "Run Copilot Prompt" 
+
+• If you're on Linux/macOS, use a cron job: */5 * * * * code --task "Run Copilot Prompt" 
+
+Now, Copilot Will Receive Your Prompt Every 5 Minutes!
+
+Would you like help modifying this for another IDE or workflow?
